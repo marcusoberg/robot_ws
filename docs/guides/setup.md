@@ -1,5 +1,7 @@
 # Set up the workspace
 
+For Windows use [WSL2 with Ubuntu x86_64](wsl.md).
+
 The [main README](../../README.md#1-clone-and-build) is the complete setup and
 public ACT walkthrough. Clone the repository, then run from its root:
 
@@ -25,3 +27,7 @@ Robot viewing and direct control do not require LeRobot or Torch.
 Activate from this clone's root. Do not source an archived ROS overlay or activate
 a second Conda environment over Pixi. If a command resolves old code, leave the
 shell and enter a fresh workspace Pixi shell.
+
+Build parallelism is bounded across both the SDK and ROS packages. Use
+`./scripts/setup.sh --local-pixi --jobs 1` for a lower-memory first build, or
+`pixi run build --jobs 1` for rebuilding. The default is two compiler jobs.

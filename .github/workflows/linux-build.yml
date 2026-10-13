@@ -1,0 +1,35 @@
+name: Linux build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/linux-build.yml'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - 'scripts/**'
+      - 'external/**'
+      - 'python/**'
+      - 'src/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Build SDK, Python bindings, installed C++ consumer and ROS packages
+        run: ./scripts/setup.sh --local-pixi --jobs 2
+      - name: Verify installed imports and ROS type support
+        run: .tools/pixi run --locked doctor

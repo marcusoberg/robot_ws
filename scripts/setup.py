@@ -21,9 +21,22 @@ def run(*command, **kw):
     subprocess.run([str(c) for c in command], check=True, **kw)
 
 
+def positive_jobs(value):
+    jobs = int(value)
+    if jobs < 1:
+        raise argparse.ArgumentTypeError("--jobs must be a positive integer")
+    return jobs
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-only", action="store_true")
+    parser.add_argument(
+        "--jobs",
+        type=positive_jobs,
+        default=2,
+        help="Maximum simultaneous compiler jobs (default: 2)",
+    )
     args = parser.parse_args()
     sdk = ROOT / "external/robot_runtime"
     env = {
@@ -32,6 +45,9 @@ def main():
         "ROBOT_RUNTIME_BUILD": str(ROOT / "build/runtime"),
         "ROBOT_RUNTIME_INSTALL": str(ROOT / "install/runtime"),
         "ROBOT_PYTHON": sys.executable,
+        "CMAKE_BUILD_PARALLEL_LEVEL": str(args.jobs),
+        # colcon otherwise gives each Makefile package all detected CPUs.
+        "MAKEFLAGS": f"-j{args.jobs}",
     }
     if not args.build_only:
         run(sdk / "scripts/setup_native.sh", env=env)
@@ -65,7 +81,7 @@ def main():
         f"-Dnanobind_DIR={ROOT / '.workspace/native-env/lib/python3.12/site-packages/nanobind/cmake'}",
         env=env,
     )
-    run("cmake", "--build", ROOT / "build/runtime", "--parallel", "2", env=env)
+    run("cmake", "--build", ROOT / "build/runtime", "--parallel", str(args.jobs), env=env)
     if sys.platform == "darwin":
         # Recopy generated extensions before CMake applies their install RPATH.
         # Otherwise a repeated install patches an already-patched up-to-date file.
@@ -86,7 +102,7 @@ def main():
         f"-DCMAKE_PREFIX_PATH={ROOT / 'install/runtime'}",
         env=env,
     )
-    run("cmake", "--build", ROOT / "build/sdk-consumer", "--parallel", "2", env=env)
+    run("cmake", "--build", ROOT / "build/sdk-consumer", "--parallel", str(args.jobs), env=env)
     # CMake installs the extension; pip installs its direct Python facade.
     run(
         sys.executable,
@@ -98,6 +114,16 @@ def main():
         "-e",
         sdk / "python",
         env=env,
+    )
+    # Import in a new process so Linux loader/ABI errors fail setup immediately.
+    # This registers binding types; it does not construct a Robot or render images.
+    binding_env = {**env, "PYTHONPATH": str(ROOT / "install/runtime/python")}
+    run(
+        sys.executable,
+        "-c",
+        "from robot_runtime_native import _native; "
+        "print('Native bindings:', _native.__file__)",
+        env=binding_env,
     )
     if sys.platform == "darwin":
         for package in ("robot_server", "robot_recorder"):
@@ -127,6 +153,8 @@ def main():
         "--install-base",
         ROOT / "install/ros",
         "--merge-install",
+        "--executor",
+        "sequential",
         "--cmake-args",
         f"-DPython3_EXECUTABLE={sys.executable}",
         f"-DPython_EXECUTABLE={sys.executable}",

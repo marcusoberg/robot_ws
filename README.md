@@ -49,7 +49,10 @@ You need Git, curl, tar, internet access and space for several GB of dependencie
 On macOS install Apple's Command Line Tools (`xcode-select --install`) if they are
 missing. Linux needs a working graphics driver/OpenGL stack for camera rendering;
 a headless machine can use `MUJOCO_GL=egl` with an available EGL driver.
-Windows and Intel macOS are not included in the environment locks.
+**Windows through WSL2 (Ubuntu x86_64) uses the Linux environment.** Follow the
+[WSL2 setup guide](docs/guides/wsl.md), then this walkthrough. Native Windows,
+Windows ARM64/WSL ARM64 and Intel macOS are not included in the environment locks.
+WSL graphics and end-to-end operation still need verification on a Windows machine.
 
 ```sh
 git clone https://github.com/marcusoberg/robot_ws.git
@@ -256,6 +259,12 @@ the server and Model Client.
 ## Development, recording and training
 
 After source changes, run `pixi run build`, then open fresh Pixi shells.
+Builds default to two compiler jobs and one ROS package at a time. For a small
+WSL VM use `./scripts/setup.sh --local-pixi --jobs 1`, or rebuild with
+`pixi run build --jobs 1`. The native extension is imported during setup to catch
+shared-library/ABI errors before the ROS build. The [Linux build workflow](.github/workflows/linux-build.yml)
+checks C++ compilation, Python bindings, the installed consumer and ROS imports;
+it does not start robots, render cameras, fetch models or run training.
 Generated files live in `build/`, `install/`, `log/`, `.workspace/` and `.pixi/`.
 Colcon is passed explicit paths to the six maintained ROS packages; it does not
 scan old repositories or archives. The fresh SDK is ordinary tracked source,

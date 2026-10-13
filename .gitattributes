@@ -1,4 +1,6 @@
-* text=auto
+# This is a Unix workspace, including when checked out with Windows Git.
+# Extensionless ROS entrypoints also need LF for their shebangs.
+* text=auto eol=lf
 *.sh text eol=lf
 *.py text eol=lf
 *.stl binary

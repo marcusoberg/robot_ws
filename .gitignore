@@ -4,6 +4,9 @@
 /*
 !/.gitignore
 !/.gitattributes
+!/.github/
+/.github/*
+!/.github/workflows/
 !/.clang-format
 !/.clang-tidy
 !/README.md
