@@ -10,7 +10,7 @@ if(NOT TARGET mujoco::mujoco)
         set(mujoco_python "${Python3_EXECUTABLE}")
     endif()
     if(mujoco_python)
-        execute_process(COMMAND "${mujoco_python}" -c
+        execute_process(COMMAND "${mujoco_python}" -I -c
             "import pathlib, mujoco; print(pathlib.Path(mujoco.__file__).resolve().parent)"
             OUTPUT_VARIABLE MUJOCO_WHEEL OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
     endif()

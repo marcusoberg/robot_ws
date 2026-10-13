@@ -10,7 +10,7 @@ set(ROBOT_RUNTIME_NATIVE_SDK "${native_sdk_default}" CACHE PATH "Native SDK envi
 set(ROBOT_RUNTIME_NATIVE_SDK_ACTIVE FALSE)
 if(ROBOT_RUNTIME_USE_NATIVE_SDK AND EXISTS "${ROBOT_RUNTIME_NATIVE_SDK}/bin/python")
     execute_process(
-        COMMAND "${ROBOT_RUNTIME_NATIVE_SDK}/bin/python" -c
+        COMMAND "${ROBOT_RUNTIME_NATIVE_SDK}/bin/python" -I -c
             "import sysconfig; print(sysconfig.get_path('purelib') + '/cmeel.prefix')"
         RESULT_VARIABLE sdk_result
         OUTPUT_VARIABLE sdk_prefix OUTPUT_STRIP_TRAILING_WHITESPACE

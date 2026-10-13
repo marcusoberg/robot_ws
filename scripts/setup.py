@@ -62,6 +62,17 @@ def main():
                 "-e",
                 ROOT / "python" / name,
             )
+    nanobind_dir = subprocess.check_output(
+        [
+            str(ROOT / ".workspace/native-env/bin/python"),
+            "-I",
+            "-m",
+            "nanobind",
+            "--cmake_dir",
+        ],
+        text=True,
+        env=env,
+    ).strip()
     run(
         "cmake",
         "-S",
@@ -78,7 +89,7 @@ def main():
         "-DROBOT_RUNTIME_BUILD_PYTHON=ON",
         "-DROBOT_RUNTIME_BUILD_MUJOCO=ON",
         f"-DROBOT_RUNTIME_BUILD_SERIAL={'ON' if sys.platform.startswith('linux') else 'OFF'}",
-        f"-Dnanobind_DIR={ROOT / '.workspace/native-env/lib/python3.12/site-packages/nanobind/cmake'}",
+        f"-Dnanobind_DIR={nanobind_dir}",
         env=env,
     )
     run("cmake", "--build", ROOT / "build/runtime", "--parallel", str(args.jobs), env=env)
