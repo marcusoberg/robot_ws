@@ -1,0 +1,5 @@
+build:
+  base-paths: [src/robot_server, src/robot_examples, src/robot_teleop, src/model_client, src/robot_recorder, src/robot_bringup]
+  build-base: build/ros
+  install-base: install/ros
+  merge-install: true

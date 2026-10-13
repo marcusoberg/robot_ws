@@ -1,0 +1,4 @@
+robot_recorder:
+  ros__parameters:
+    capacity: 64
+    output_root: runs

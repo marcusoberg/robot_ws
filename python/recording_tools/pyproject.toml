@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+[project]
+name = "recording-tools"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy>=2,<3", "pydantic>=2.10,<3", "mcap>=1.3,<2", "msgpack>=1.1,<2", "PyYAML>=6,<7"]
+[tool.hatch.build.targets.wheel]
+packages = ["recording_tools"]
+[project.optional-dependencies]
+lerobot = ["lerobot==0.6.0"]
+[project.scripts]
+recording-export = "recording_tools.cli:main"

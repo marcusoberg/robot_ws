@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.22)
+project(runtime_consumer LANGUAGES CXX)
+find_package(robot_runtime CONFIG REQUIRED)
+add_executable(runtime_consumer consumer.cpp)
+target_link_libraries(runtime_consumer PRIVATE robot_runtime::sdk)

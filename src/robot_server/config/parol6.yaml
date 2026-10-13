@@ -1,0 +1,53 @@
+robot:
+  description: ../assets/parol6/parol6.urdf
+  base: base_link
+  tip: tool_tcp
+  initial:
+  - 1.5707963267948966
+  - -1.5707963267948966
+  - 3.141592653589793
+  - 0
+  - 0
+  - 3.141592653589793
+  standby:
+  - 1.5707963267948966
+  - -1.5707963267948966
+  - 3.141592653589793
+  - 0
+  - 0
+  - 3.141592653589793
+controller:
+  period_ms: 10
+  standby_duration_ms: 4000
+  speed_fraction: 0.35
+  acceleration_time: 0.3333333333333333
+  jerk_time: 0.1
+mujoco:
+  model: ../assets/parol6/parol6.xml
+  base_frame: base
+  binary_actuator: gripper_position
+  open_position: 0.0035
+  closed_position: 0.0
+serial:
+  device: /dev/ttyACM0
+  baud: 3000000
+  startup_outputs:
+  - false
+  - false
+  first_response_timeout_seconds: 1.0
+  pneumatic_open_high: true
+  joints:
+  - L1
+  - L2
+  - L3
+  - L4
+  - L5
+  - L6
+cameras:
+- name: overview
+  width: 320
+  height: 240
+  depth: true
+  frame: overview
+  calibration: parol6-overview-v1
+  frequency: 20

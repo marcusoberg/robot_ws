@@ -1,0 +1,17 @@
+model: smolvla
+joints:
+- shoulder_pan
+- shoulder_lift
+- elbow_flex
+- wrist_flex
+- wrist_roll
+- gripper
+cameras:
+  observation.images.front: front/rgb
+resolution:
+- 512
+- 512
+period: 0.05
+fit_tolerance: 0.15
+join_seconds: 1.0
+lead_seconds: 0.15

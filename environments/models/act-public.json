@@ -1,0 +1,35 @@
+{
+  "repository": "alexhegit/so101-simstudio-lab01-pnp-act-state6",
+  "revision": "a47afe4dad358031794505799307d4f9756f316c",
+  "license": "Apache-2.0 (upstream model card)",
+  "files": {
+    "README.md": {
+      "bytes": 2294,
+      "sha256": "d05f6392335311e523610fe6abaf8a1179489518cea471eff43eff238f840beb"
+    },
+    "config.json": {
+      "bytes": 1897,
+      "sha256": "c0355bea109f4848805c36eb764a2d85dc450006484ac45fbacbd0b71a24cfc8"
+    },
+    "model.safetensors": {
+      "bytes": 206699736,
+      "sha256": "4f4e13cf3c4215f580c2ae5bf59dab2225f41bd6bec804bf0d997c1647eb2e10"
+    },
+    "policy_preprocessor.json": {
+      "bytes": 1521,
+      "sha256": "05c1dcd51245f38be1341f4b06f4e12b315012d303243ec8918f2609596380e3"
+    },
+    "policy_postprocessor.json": {
+      "bytes": 660,
+      "sha256": "648b415125a183dfd6cbc47c1dc04ab3f2d912654ef22a12ca5e8b93d7d85cdd"
+    },
+    "policy_preprocessor_step_3_normalizer_processor.safetensors": {
+      "bytes": 8744,
+      "sha256": "cef43f65829e3d77beea71d1f09e69043285cbf8f917ae634c8fd6d9c7d63c3b"
+    },
+    "policy_postprocessor_step_0_unnormalizer_processor.safetensors": {
+      "bytes": 8736,
+      "sha256": "1af4408ae850ca010bf4322fc6406ec4c34630306113846fd8125f55b80ea580"
+    }
+  }
+}

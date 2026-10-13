@@ -1,0 +1,234 @@
+<?xml version='1.0' encoding='utf-8'?>
+<robot name="parol6">
+  <!--Runtime and visualization description for the vertical pneumatic tool. Geometry uses the parol6 description package; jaws are fixed at their modeled position.-->
+  <link name="world" />
+  <joint name="base_joint" type="fixed">
+    <parent link="world" />
+    <child link="base_link" />
+    <origin rpy="0 0 0" xyz="0.0 0.0 0.00" />
+  </joint>
+  <link name="base_link">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/base_link.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/base_link_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="link_1">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L1.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L1_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L1" type="revolute">
+    <parent link="base_link" />
+    <child link="link_1" />
+    <origin xyz="0 0 0.1105" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-2.147573103039898" upper="2.147573103039898" velocity="2.3009711818284617" effort="0" />
+  </joint>
+  <link name="link_2">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L2.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L2_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L2" type="revolute">
+    <parent link="link_1" />
+    <child link="link_2" />
+    <origin xyz="0.0234207210610375 0 0" rpy="-1.5707963267948966 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-2.5308810043659533" upper="-0.05890486225480862" velocity="1.2271846303085128" effort="0" />
+  </joint>
+  <link name="link_3">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L3.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L3_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L3" type="revolute">
+    <parent link="link_2" />
+    <child link="link_3" />
+    <origin xyz="0.18 0 0" rpy="3.141592653589793 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="1.8826168509562036" upper="5.024235684484776" velocity="1.7361433085627804" effort="0" />
+  </joint>
+  <link name="link_4">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L4.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L4_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L4" type="revolute">
+    <parent link="link_3" />
+    <child link="link_4" />
+    <origin xyz="-0.0435 0.17635 0" rpy="1.5707963267948966 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.8407943987552895" upper="1.8407943987552895" velocity="2.454369260617026" effort="0" />
+  </joint>
+  <link name="link_5">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L5.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L5_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L5" type="revolute">
+    <parent link="link_4" />
+    <child link="link_5" />
+    <origin xyz="0 0 0" rpy="-1.5707963267948966 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="-1.5707963267948966" upper="1.5707963267948966" velocity="2.454369260617026" effort="0" />
+  </joint>
+  <link name="link_6">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 -0.021" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L6.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 -0.021" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/L6_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="L6" type="revolute">
+    <parent link="link_5" />
+    <child link="link_6" />
+    <origin xyz="0 0.037 0" rpy="1.5707963267948966 0 0" />
+    <axis xyz="0 0 1" />
+    <limit lower="0.0" upper="6.283185307179586" velocity="2.650718801466388" effort="0" />
+  </joint>
+  <link name="tool_tcp" />
+  <joint name="tool_mount" type="fixed">
+    <parent link="link_6" />
+    <child link="tool_tcp" />
+    <origin xyz="-0.055 0 -0.027" rpy="0 0 0" />
+  </joint>
+  <link name="tool_body">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_body_simplified.stl" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_body_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tool_body_joint" type="fixed">
+    <parent link="link_6" />
+    <child link="tool_body" />
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </joint>
+  <link name="tool_right_jaw">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_right_jaw_simplified.stl" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_right_jaw_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tool_right_jaw_joint" type="fixed">
+    <parent link="link_6" />
+    <child link="tool_right_jaw" />
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </joint>
+  <link name="tool_left_jaw">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_left_jaw_simplified.stl" />
+      </geometry>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_left_jaw_simplified.stl" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="tool_left_jaw_joint" type="fixed">
+    <parent link="link_6" />
+    <child link="tool_left_jaw" />
+    <origin rpy="0 0 0" xyz="0 0 0" />
+  </joint>
+</robot>

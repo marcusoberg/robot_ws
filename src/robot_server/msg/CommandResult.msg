@@ -1,0 +1,16 @@
+uint8 QUEUED=0
+uint8 ACCEPTED=1
+uint8 COMPLETED=2
+uint8 REJECTED=3
+uint8 CANCELED=4
+string source
+string source_instance
+string runtime_instance
+uint64 timeline_generation
+uint64 session_generation
+uint64 request_id
+uint64 command_id
+uint64 native_command_id
+string operation
+uint8 outcome
+string reason

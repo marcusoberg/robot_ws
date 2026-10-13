@@ -1,0 +1,81 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+ColumnLimit: 160
+IndentWidth: 4
+TabWidth: 4
+AccessModifierOffset: -4
+# AlignConsecutiveAssignments: true
+# AlignConsecutiveDeclarations: true
+AlignOperands: true
+AlignTrailingComments: true
+# AlwaysBreakTemplateDeclarations: Yes
+# BreakBeforeBraces: Custom
+# BraceWrapping:
+#   AfterCaseLabel: false
+
+#   # Always:
+#   AfterClass: true
+#   AfterFunction: true
+
+#   # Keep opening brace attached:
+#   AfterStruct: false
+#   AfterEnum: false
+#   AfterUnion: false
+#   AfterNamespace: false
+
+#   # if/for/while: break before { only when the condition/header itself wraps
+#   AfterControlStatement: MultiLine
+
+#   # Multi-line lambdas use a detached brace.
+#   BeforeLambdaBody: true
+
+#   # } else { / } catch { / } while (...)
+#   BeforeElse: false
+#   BeforeCatch: false
+#   BeforeWhile: false
+#   SplitEmptyFunction: false
+#   SplitEmptyRecord: true
+#   SplitEmptyNamespace: false
+
+# # Single-line 
+# AllowShortFunctionsOnASingleLine: None
+# AllowShortLambdasOnASingleLine: All
+# AllowShortIfStatementsOnASingleLine: WithoutElse
+# AllowShortBlocksOnASingleLine: Always
+
+# # Arguments/Parameters
+# AlignAfterOpenBracket: true
+# BinPackParameters: false
+# BinPackArguments: false
+# AllowAllParametersOfDeclarationOnNextLine: false
+# AllowAllArgumentsOnNextLine: false
+
+# # Do not make structural changes to control statements.
+# InsertBraces: false
+# RemoveBracesLLVM: true
+
+# BreakConstructorInitializers: AfterColon
+# BreakConstructorInitializersBeforeComma: false
+# ConstructorInitializerAllOnOneLineOrOnePerLine: false
+# IncludeCategories: 
+#   - Regex: '^<.*'
+#     Priority: 1
+#   - Regex: '^".*'
+#     Priority: 2
+#   - Regex: '.*'
+#     Priority: 3
+# IncludeIsMainRegex: '([-_](test|unittest))?$'
+# IndentCaseBlocks: true
+# InsertNewlineAtEOF: true
+# MacroBlockBegin: ''
+# MacroBlockEnd: ''
+# MaxEmptyLinesToKeep: 2
+# NamespaceIndentation: Inner
+# DerivePointerAlignment: false
+# PointerAlignment: Left
+# SpacesInParentheses: false
+# SpaceInEmptyParentheses: false
+# SpacesInAngles: false
+# SpacesInConditionalStatement: false
+# SpacesInCStyleCastParentheses: false

@@ -1,0 +1,30 @@
+{
+  "state_joints": [
+    "shoulder_pan",
+    "shoulder_lift",
+    "elbow_flex",
+    "wrist_flex",
+    "wrist_roll",
+    "gripper"
+  ],
+  "cameras": {
+    "observation.images.camera_front": [
+      3,
+      480,
+      640
+    ],
+    "observation.images.camera_top": [
+      3,
+      480,
+      640
+    ],
+    "observation.images.camera_wrist": [
+      3,
+      480,
+      640
+    ]
+  },
+  "action_representation": "joint_position",
+  "action_period": 0.05,
+  "instruction": false
+}

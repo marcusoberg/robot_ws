@@ -1,0 +1,9 @@
+string event_id
+string kind
+int64 host_ns
+string host_clock
+bool has_basis
+string runtime_instance
+uint64 timeline_generation
+uint64 observation_sequence
+string details_json

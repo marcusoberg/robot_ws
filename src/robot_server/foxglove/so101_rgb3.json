@@ -1,0 +1,84 @@
+{
+  "configById": {
+    "3D!robot": {
+      "cameraState": {
+        "distance": 1.0,
+        "perspective": true
+      },
+      "followTf": "world",
+      "layers": {
+        "robot": {
+          "type": "urdf",
+          "label": "Robot",
+          "visible": true,
+          "sourceTopic": "/robot/urdf"
+        }
+      }
+    },
+    "Image!front": {
+      "imageTopic": "/robot/cameras/front/rgb",
+      "cameraInfoTopic": "/robot/cameras/front/rgb/camera_info"
+    },
+    "Plot!tracking": {
+      "paths": [
+        {
+          "value": "/robot/tracking_error.data[0]",
+          "enabled": true
+        },
+        {
+          "value": "/robot/reference.position[0]",
+          "enabled": true
+        },
+        {
+          "value": "/joint_states.position[0]",
+          "enabled": true
+        }
+      ]
+    },
+    "RawMessages!authority": {
+      "topicPath": "/robot/ownership"
+    },
+    "Plot!timing": {
+      "paths": [
+        {
+          "value": "/robot/timing.data[2]",
+          "enabled": true
+        }
+      ]
+    },
+    "Image!top": {
+      "imageTopic": "/robot/cameras/top/rgb",
+      "cameraInfoTopic": "/robot/cameras/top/rgb/camera_info"
+    },
+    "Image!wrist": {
+      "imageTopic": "/robot/cameras/wrist/rgb",
+      "cameraInfoTopic": "/robot/cameras/wrist/rgb/camera_info"
+    }
+  },
+  "layout": {
+    "direction": "row",
+    "first": {
+      "direction": "column",
+      "first": "3D!robot",
+      "second": "Plot!tracking"
+    },
+    "second": {
+      "direction": "column",
+      "first": "Image!front",
+      "second": {
+        "direction": "column",
+        "first": {
+          "direction": "row",
+          "first": "Image!top",
+          "second": "Image!wrist"
+        },
+        "second": {
+          "direction": "row",
+          "first": "RawMessages!authority",
+          "second": "Plot!timing"
+        }
+      }
+    }
+  },
+  "globalVariables": {}
+}

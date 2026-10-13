@@ -1,0 +1,14 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+[project]
+name = "model-training"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["model-api>=0.1", "recording-tools>=0.1"]
+[tool.hatch.build.targets.wheel]
+packages = ["model_training"]
+[project.optional-dependencies]
+lerobot = ["lerobot[smolvla,training]==0.6.0", "scipy>=1.15,<2", "safetensors>=0.5,<1"]
+[project.scripts]
+model-train = "model_training.prepare:main"

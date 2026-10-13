@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+from robot_examples.boundary_probe import main
+main()

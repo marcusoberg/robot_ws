@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(robot_examples)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+ament_python_install_package(${PROJECT_NAME})
+install(PROGRAMS scripts/robotctl scripts/send_joint scripts/send_timed_targets scripts/boundary_probe DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME} OPTIONAL)
+ament_package()

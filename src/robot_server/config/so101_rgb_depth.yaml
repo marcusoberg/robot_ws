@@ -1,0 +1,37 @@
+robot:
+  description: ../assets/so101/so101_new_calib.urdf
+  base: world
+  tip: gripperframe
+  auxiliary_joints:
+  - gripper
+  initial:
+  - 0.0
+  - -0.3
+  - 0.6
+  - 1.2
+  - 0.0
+  - -0.1
+  standby:
+  - 0.0
+  - -0.3
+  - 0.6
+  - 1.2
+  - 0.0
+  - -0.1
+controller:
+  period_ms: 10
+  standby_duration_ms: 3000
+  speed_fraction: 0.5
+  acceleration_time: 0.1
+  jerk_time: 0.02
+  position_gain: 30.0
+mujoco:
+  model: ../assets/so101/scene_rgb_depth.xml
+cameras:
+- name: front
+  width: 512
+  height: 512
+  depth: true
+  frame: front
+  calibration: so101-front-rgb-depth-v1
+  frequency: 20
