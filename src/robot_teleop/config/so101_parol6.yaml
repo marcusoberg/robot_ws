@@ -1,0 +1,22 @@
+# Mapping is a starting point: inspect /teleop/target before engaging.
+# All xyz values are metres; rpy values are radians, fixed-axis XYZ.
+mapping:
+  base: base_link
+  tip: gripperframe
+  joint_sign: [1, 1, 1, 1, 1]
+  joint_offset_degrees: [0, 0, 0, 0, 0]
+  position_scale: 1.0
+  # Maps the leader into the PAROL6 command frame (world).
+  robot_from_leader:
+    xyz: [0, 0, 0.2]
+    rpy: [0, 0, 0]
+  # Local tool correction: post-multiply the handle pose by Ry(-90 degrees).
+  handle_to_tool:
+    xyz: [0, 0, 0]
+    rpy: [0, -1.5707963267948966, 0]
+gripper_open_threshold: 50
+recording:
+  fps: 20
+  task: Pick up the green cube and place it in the brown container.
+  cameras:
+    overview: overview/rgb

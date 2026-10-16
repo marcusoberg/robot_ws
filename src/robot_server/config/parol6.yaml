@@ -1,6 +1,7 @@
 robot:
   description: ../assets/parol6/parol6.urdf
-  base: base_link
+  # Cartesian commands stay in world; the URDF rotates base_link within it.
+  base: world
   tip: tool_tcp
   initial:
   - 1.5707963267948966
@@ -24,7 +25,7 @@ controller:
   jerk_time: 0.1
 mujoco:
   model: ../assets/parol6/parol6.xml
-  base_frame: base
+  base_frame: world
   binary_actuator: gripper_position
   open_position: 0.0035
   closed_position: 0.0

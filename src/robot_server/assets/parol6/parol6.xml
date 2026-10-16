@@ -7,7 +7,7 @@
     <global azimuth="135" elevation="-25"/>
   </visual>
   <asset>
-    <!-- Same visual assets and local transforms as parol6.urdf. -->
+    <!-- Arm visual assets and local transforms follow parol6.urdf. -->
     <mesh name="base_visual" file="base_link.STL"/>
     <mesh name="L1_visual" file="L1.STL"/>
     <mesh name="L2_visual" file="L2.STL"/>
@@ -16,8 +16,6 @@
     <mesh name="L5_visual" file="L5.STL"/>
     <mesh name="L6_visual" file="L6.STL"/>
     <mesh name="tool_body_visual" file="pneumatic_gripper_vertical_body_simplified.stl"/>
-    <mesh name="tool_left_visual" file="pneumatic_gripper_vertical_left_jaw_simplified.stl"/>
-    <mesh name="tool_right_visual" file="pneumatic_gripper_vertical_right_jaw_simplified.stl"/>
     <material name="robot_material" rgba="0.752941 0.752941 0.752941 1"/>
     <material name="tool_material" rgba="0.28 0.3 0.33 1"/>
   </asset>
@@ -34,7 +32,24 @@
   <worldbody>
     <camera name="overview" pos="0.75 -0.75 0.65" xyaxes="0.707107 0.707107 0 -0.301511 0.301511 0.904534" fovy="45"/>
     <geom name="floor" type="plane" size="1 1 0.05" pos="0 0 -0.015"/>
-    <body name="base">
+    <!-- Raised supports, 14 mm cube and an open container. The cube fits
+         the existing 12..15.5 mm asymmetric pneumatic jaw opening. -->
+    <geom name="cube_support" type="box" pos="0.22 -0.075 0.0175" size="0.025 0.025 0.0325" rgba="0.3 0.35 0.4 1"/>
+    <body name="cube" pos="0.22 -0.075 0.057">
+      <freejoint name="cube_free"/>
+      <geom name="cube" type="box" size="0.007 0.007 0.007" mass="0.005"
+            rgba="0.15 0.85 0.20 1" friction="1.5 0.01 0.001" condim="4"/>
+    </body>
+    <body name="container" pos="0.22 0.08 0.05">
+      <geom name="container_support" type="box" pos="0 0 -0.0325" size="0.04 0.04 0.0325" rgba="0.3 0.35 0.4 1"/>
+      <geom name="container_bottom" type="box" pos="0 0 0.003" size="0.04 0.04 0.003" rgba="0.65 0.38 0.18 1"/>
+      <geom name="container_left" type="box" pos="-0.037 0 0.018" size="0.003 0.04 0.018" rgba="0.65 0.38 0.18 1"/>
+      <geom name="container_right" type="box" pos="0.037 0 0.018" size="0.003 0.04 0.018" rgba="0.65 0.38 0.18 1"/>
+      <geom name="container_front" type="box" pos="0 -0.037 0.018" size="0.034 0.003 0.018" rgba="0.65 0.38 0.18 1"/>
+      <geom name="container_back" type="box" pos="0 0.037 0.018" size="0.034 0.003 0.018" rgba="0.65 0.38 0.18 1"/>
+    </body>
+    <!-- Match the URDF world-to-base_link mounting rotation. -->
+    <body name="base" euler="0 0 -1.5707963267948966">
       <inertial pos="-0.0274562 -0.00137265 0.0312379" mass="0.812661"
                 fullinertia="0.00110740 0.00106582 0.00147883 0.0000467463 0.00000847874 -0.00000261941"/>
       <geom class="visual" mesh="base_visual"/>
@@ -75,13 +90,15 @@
                             fullinertia="0.0000140276 0.0000181407 0.0000234608 0.000000315503 -0.000000928470 -0.000000943630"/>
                   <geom class="visual" mesh="L6_visual" pos="0 0 -0.021"/>
                   <geom class="visual" mesh="tool_body_visual" material="tool_material"/>
-                  <geom class="visual" mesh="tool_left_visual"/>
-                  <geom class="visual" mesh="tool_right_visual"/>
+                  <!-- Contact pads are rendered directly so the image shows the
+                       actual asymmetric jaw aperture, not two static CAD jaws. -->
+                  <geom name="fixed_finger" type="box" pos="-0.055 -0.012 -0.027"
+                        size="0.025 0.006 0.005" rgba="0.28 0.3 0.33 1" friction="1.5 0.01 0.001" condim="4"/>
                   <geom class="collision" type="cylinder" size="0.022 0.040"/>
                   <site name="tool_tcp" pos="-0.055 0 -0.027" size="0.004" rgba="0.1 0.8 0.2 1"/>
                   <body name="pneumatic_jaw" pos="-0.055 0 -0.027">
                     <joint name="gripper_slide" type="slide" axis="0 1 0" range="0 0.0035" damping="8"/>
-                    <geom class="collision" type="box" size="0.025 0.006 0.012" pos="0 0.012 0"/>
+                    <geom name="moving_finger" type="box" size="0.025 0.006 0.005" pos="0 0.012 0" rgba="0.28 0.3 0.33 1" friction="1.5 0.01 0.001" condim="4"/>
                   </body>
                 </body>
               </body>

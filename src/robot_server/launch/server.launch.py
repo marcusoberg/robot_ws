@@ -2,7 +2,7 @@
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -27,9 +27,10 @@ def generate_launch_description():
             "mode": LaunchConfiguration("mode"),
             "action_period": ParameterValue(LaunchConfiguration("action_period"), value_type=float),
         }]),
-        IncludeLaunchDescription(
+        # Keep the bridge's generic arguments (notably port) local to its launch.
+        GroupAction(scoped=True, actions=[IncludeLaunchDescription(
             AnyLaunchDescriptionSource(str(bridge / "launch/foxglove_bridge_launch.xml")),
             condition=IfCondition(LaunchConfiguration("foxglove")),
             launch_arguments={"address": "127.0.0.1", "port": LaunchConfiguration("foxglove_port")}.items(),
-        ),
+        )]),
     ])

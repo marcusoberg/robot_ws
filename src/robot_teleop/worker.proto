@@ -1,0 +1,23 @@
+syntax = "proto3";
+package robot.teleop;
+message Plane { string name = 1; uint32 height = 2; uint32 width = 3; bytes rgb = 4; }
+message Frame {
+  repeated double state = 1;
+  repeated double action = 2;
+  repeated string joints = 3;
+  repeated Plane images = 4;
+  string runtime = 5;
+  uint64 timeline = 6;
+  uint64 observation = 7;
+  uint64 time_ns = 8;
+  uint64 action_time_ns = 9;
+  string metadata_json = 10;
+}
+message Request { string operation = 1; Frame frame = 2; }
+message Reply {
+  string status = 1;
+  string error = 2;
+  repeated double leader_degrees = 3;
+  double gripper = 4;
+  uint64 host_time_ns = 5;
+}

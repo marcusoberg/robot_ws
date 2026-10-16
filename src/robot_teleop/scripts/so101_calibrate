@@ -1,0 +1,3 @@
+#!/usr/bin/env python3
+from robot_teleop.calibrate import main
+main()
