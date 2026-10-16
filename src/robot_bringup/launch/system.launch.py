@@ -27,7 +27,6 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("mode", default_value="realtime"),
             DeclareLaunchArgument("foxglove", default_value="true"),
-            DeclareLaunchArgument("record", default_value="false"),
             DeclareLaunchArgument("example", default_value="false"),
             DeclareLaunchArgument("model", default_value="false"),
             DeclareLaunchArgument(
@@ -48,12 +47,6 @@ def generate_launch_description():
                     "mode": LaunchConfiguration("mode"),
                     "foxglove": LaunchConfiguration("foxglove"),
                 },
-            ),
-            include(
-                "robot_recorder",
-                "recording.launch.py",
-                {},
-                IfCondition(LaunchConfiguration("record")),
             ),
             include(
                 "robot_examples",

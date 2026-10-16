@@ -1,0 +1,27 @@
+model: act
+joints:
+- shoulder_pan
+- shoulder_lift
+- elbow_flex
+- wrist_flex
+- wrist_roll
+- gripper
+cameras:
+  observation.images.camera_front: front/rgb
+  observation.images.camera_top: top/rgb
+  observation.images.camera_wrist: wrist/rgb
+resolution:
+- 640
+- 480
+period: 0.05
+fit_tolerance: 0.1
+join_seconds: 1.0
+lead_seconds: 0.15
+# Runtime radians -> dataset units, then dataset action units -> runtime radians.
+# Use only for data recorded in this exact joint order and unit convention.
+state_units: [rad, rad, rad, rad, rad, rad]
+action_units: [rad, rad, rad, rad, rad, rad]
+state_scale: [1, 1, 1, 1, 1, 1]
+state_offset: [0, 0, 0, 0, 0, 0]
+action_scale: [1, 1, 1, 1, 1, 1]
+action_offset: [0, 0, 0, 0, 0, 0]

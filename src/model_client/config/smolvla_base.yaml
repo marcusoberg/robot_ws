@@ -1,0 +1,20 @@
+# Original upstream weights/processors. Diagnostic inference only.
+# Missing upstream state statistics and ambiguous legacy action statistics prevent
+# a documented conversion to runtime joint targets. Never submit outputs as radians.
+model: smolvla
+expected_revision: sha256:7cd549ac2351fb069c0ddb3c34ad2d09cfc92b56a15dccdfc2e41467aaca01eb
+action_representation: unmapped_model_output
+joints:
+- shoulder_pan
+- shoulder_lift
+- elbow_flex
+- wrist_flex
+- wrist_roll
+- gripper
+cameras:
+  observation.images.camera1: top/rgb
+  observation.images.camera2: wrist/rgb
+  observation.images.camera3: front/rgb
+resolution: [256, 256]
+image_resize: letterbox
+period: 0.03333333333333333

@@ -11,8 +11,8 @@ class Planner final {
 public:
     explicit Planner(const ControllerConfig &config) : config_(config) {}
     Trajectory trajectory(PathPoints points) const { return Trajectory{path(std::move(points))}; }
-    ScheduledMotion schedule(PathPoints points, core::Time start, std::uint64_t epoch, std::optional<communication::Id> replaces) const {
-        return ScheduledMotion{start, epoch, replaces, path(std::move(points))};
+    ScheduledMotion schedule(PathPoints points, core::Time start, std::uint64_t epoch, std::optional<communication::Id> replaces, std::vector<GripperPoint> gripper = {}) const {
+        return ScheduledMotion{start, epoch, replaces, path(std::move(points)), std::move(gripper)};
     }
     template <class Target>
         requires(std::same_as<Target, resources::Positions> || std::same_as<Target, resources::Velocities> || std::same_as<Target, communication::Pose> ||
@@ -92,6 +92,11 @@ public:
                     return Brake{};
             },
             phase_);
+    }
+    std::optional<bool> gripper(const core::Context &ctx) const {
+        if (const auto *scheduled = std::get_if<Scheduled>(&phase_))
+            return scheduled->view.current.motion.gripper(ctx.end);
+        return {};
     }
     bool finished(const core::Context &ctx) const {
         const auto *move = std::get_if<FiniteMove>(&phase_);

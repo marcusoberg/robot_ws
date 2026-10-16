@@ -11,23 +11,44 @@ from robot_server.msg import Capture, MotionCommand, CommandResult
 from trajectory_msgs.msg import JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
 from robot_server_client import Producer
-from model_api import Features, PolicyInput, RemoteModel
-from model_api.capture import decode_capture_packet
+import numpy as np
+from robot_inference import Features, PolicyInput, RemoteModel
+from .capture import decode_capture
 
 
 class ModelClient(Producer):
     def __init__(self, source, config, url, instruction):
+        if config.get("action_representation", "joint_position") != "joint_position":
+            raise ValueError(
+                "This profile produces unmapped model outputs, not robot joint targets. "
+                "State/action calibration is required before control."
+            )
         super().__init__(source)
         self.config, self.url, self.instruction = config, url, instruction
         self.features = Features(
             state_joints=tuple(config["joints"]),
-            cameras={
+            cameras=config.get("camera_shapes") or {
                 k: (3, config["resolution"][1], config["resolution"][0])
                 for k in config["cameras"]
             },
+            action_joints=tuple(config.get("action_joints", config["joints"])),
+            state_units=tuple(config.get("state_units", [])),
+            action_units=tuple(config.get("action_units", [])),
             action_period=config["period"],
+            binary_gripper=config.get("binary_gripper", False),
+            action_time_offset_ns=config.get("action_time_offset_ns", 0),
             instruction=config["model"] == "smolvla",
         )
+        for prefix, names in (("state", self.features.state_joints), ("action", self.features.action_joints)):
+            for suffix, default in (("scale", 1.0), ("offset", 0.0)):
+                values = np.asarray(config.get(f"{prefix}_{suffix}", [default]*len(names)), dtype=float)
+                if values.shape != (len(names),) or not np.isfinite(values).all() or (suffix == "scale" and np.any(values == 0)):
+                    raise ValueError(f"Invalid {prefix}_{suffix}")
+                setattr(self, f"{prefix}_{suffix}", values)
+        self.motion_joints = self.features.action_joints[:-1] if self.features.binary_gripper else self.features.action_joints
+        self.gripper_threshold = config.get("gripper_threshold", 0.5)
+        if self.features.binary_gripper and (self.action_scale[-1] != 1 or self.action_offset[-1] != 0 or not 0 < self.gripper_threshold < 1):
+            raise ValueError("Invalid binary gripper mapping")
         self.capture = None
         self.remote = None
         self.future = None
@@ -44,7 +65,7 @@ class ModelClient(Producer):
 
     def received(self, message):
         try:
-            value = decode_capture_packet(bytes(message.packet))
+            value = decode_capture(message)
             identity = value.identity
             if (
                 identity.runtime_instance,
@@ -70,9 +91,10 @@ class ModelClient(Producer):
                 expected_revision=self.config.get("expected_revision"),
             )
         observation = capture.observation
-        if tuple(self.description["joints"]) != self.features.state_joints:
+        if tuple(self.description["joints"]) != self.features.state_joints or tuple(self.description["joints"]) != self.motion_joints:
             raise ValueError("Robot joint order differs from model features")
-        features = {"observation.state": observation["state"]["position"]}
+        state = np.asarray(observation["state"]["position"])
+        features = {"observation.state": state * self.state_scale + self.state_offset}
         for feature, camera in self.config["cameras"].items():
             features[feature] = capture.images[camera]
         value = PolicyInput(
@@ -80,7 +102,8 @@ class ModelClient(Producer):
             execution_time_ns=capture.execution_time_ns,
             features=features,
             capture_metadata={
-                "images": observation["images"],
+                "images": {feature: observation["images"][camera]
+                           for feature, camera in self.config["cameras"].items()},
                 "joint_stamp": observation["state"],
             },
             instruction=self.instruction,
@@ -126,22 +149,24 @@ class ModelClient(Producer):
                 command = self.command(MotionCommand.TIMED_TARGET_CHUNK)
                 if command is None:
                     return
-                command.target_origin_ns = prediction.execution_time_ns
+                command.target_origin_ns = prediction.execution_time_ns + self.features.action_time_offset_ns
                 command.prediction_observation_sequence = (
                     prediction.basis.observation_sequence
                 )
                 command.sample_period_ns = round(prediction.action_period * 1e9)
                 command.lead_ns = round(self.config.get("lead_seconds", 0.15) * 1e9)
                 command.join_ns = round(self.config.get("join_seconds", 1.0) * 1e9)
-                command.fit_tolerance = [self.config["fit_tolerance"]] * len(
-                    prediction.actions[0]
-                )
-                command.trajectory.joint_names = list(self.features.state_joints)
-                for i, position in enumerate(prediction.actions):
+                command.fit_tolerance = [self.config["fit_tolerance"]] * len(self.motion_joints)
+                command.trajectory.joint_names = list(self.motion_joints)
+                decoded = np.asarray(prediction.actions) * self.action_scale + self.action_offset
+                if self.features.binary_gripper:
+                    command.gripper_open_samples = (decoded[:, -1] >= self.gripper_threshold).tolist()
+                    decoded = decoded[:, :-1]
+                for i, position in enumerate(decoded):
                     offset = i * command.sample_period_ns
                     command.trajectory.points.append(
                         JointTrajectoryPoint(
-                            positions=position,
+                            positions=position.tolist(),
                             time_from_start=Duration(
                                 sec=offset // 1_000_000_000,
                                 nanosec=offset % 1_000_000_000,
@@ -211,7 +236,11 @@ def main():
     parser.add_argument("--instruction", default="Move the cube to the target")
     parser.add_argument("--source", default="model")
     args = parser.parse_args(rclpy.utilities.remove_ros_args(sys.argv)[1:])
-    config = yaml.safe_load(Path(args.config).read_text())
+    config_path = Path(args.config).resolve()
+    config = yaml.safe_load(config_path.read_text())
+    if (config_path.parent / "manifest.json").is_file():
+        from robot_inference.bundle import verify
+        config["expected_revision"] = verify(config_path.parent)["revision"]
     rclpy.init()
     node = ModelClient(args.source, config, args.url, args.instruction)
     try:

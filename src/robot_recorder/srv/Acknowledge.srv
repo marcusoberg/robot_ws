@@ -1,8 +1,0 @@
-# Nonblocking acknowledgement of canonical capture writer completion.
-string runtime_instance
-uint64 timeline_generation
-uint64 observation_sequence
----
-bool recorded
-bool pending
-string error

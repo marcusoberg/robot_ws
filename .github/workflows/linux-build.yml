@@ -9,7 +9,8 @@ on:
       - 'pixi.lock'
       - 'scripts/**'
       - 'external/**'
-      - 'python/**'
+      - 'inference/**'
+      - 'training/**'
       - 'src/**'
   pull_request:
   workflow_dispatch:

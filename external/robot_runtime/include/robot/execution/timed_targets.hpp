@@ -32,6 +32,8 @@ inline FittedTargets fitTimedTargets(const communication::TimedJointTargetsReque
     if (r.period.count() > (core::duration::max().count()-r.origin.time_since_epoch().count())/(n-1) ||
         r.start.time_since_epoch()>core::duration::max()-r.join)
         throw std::invalid_argument("timed target timestamps overflow");
+    if (!r.gripper_open.empty() && r.gripper_open.size() != static_cast<std::size_t>(n))
+        throw std::invalid_argument("gripper sample count must equal timed target count");
     Eigen::VectorXd tolerance(dof);
     if (r.tolerance.size()!=1 && r.tolerance.size()!=std::size_t(dof)) throw std::invalid_argument("fit tolerance must be scalar or model-sized");
     for (Eigen::Index j=0;j<dof;++j) {
@@ -121,12 +123,22 @@ inline FittedTargets fitTimedTargets(const communication::TimedJointTargetsReque
     if(first>=n-1) throw std::invalid_argument("prediction has insufficient future motion after its join");
     communication::ScheduleRequest schedule{communication::ModelJointOrder{},r.start,r.epoch,r.replaces,{}};
     schedule.points.reserve(n-first);
+    // Tool states keep their original timestamps, including during the arm's
+    // join segment. Otherwise frequent replacements could postpone them forever.
+    if (!r.gripper_open.empty()) {
+        schedule.gripper.reserve(n);
+        for (Eigen::Index i=0;i<n;++i) {
+            const auto time=r.origin+i*r.period;
+            if (time>=r.start) schedule.gripper.push_back({time-r.start,r.gripper_open[static_cast<std::size_t>(i)]});
+        }
+    }
     for(Eigen::Index i=first;i<n;++i) {
         communication::ReferencePointRequest point;
         for(Eigen::Index j=0;j<dof;++j) {
             point.position.push_back(accepted_position(i,j)); point.velocity.push_back(accepted_velocity(i,j)); point.acceleration.push_back(accepted_acceleration(i,j));
         }
-        point.offset=r.origin+i*r.period-r.start; schedule.points.push_back(std::move(point));
+        point.offset=r.origin+i*r.period-r.start;
+        schedule.points.push_back(std::move(point));
     }
     return {std::move(schedule),std::move(report),std::move(accepted_position),std::move(accepted_velocity),std::move(accepted_acceleration)};
 }

@@ -139,6 +139,7 @@ public:
             stream_expiry_.reset();
             completeOperator();
         }
+        if (mode() == Mode::Autonomous && plan.gripper) gripper_ = plan.gripper;
         status_.motion_limited = previous.progress.limited && (mode() == Mode::Autonomous || mode() == Mode::Direct);
         const Demand demand = mode() == Mode::Direct       ? Demand{Jog{authority.direct}}
                               : mode() == Mode::Hold       ? Demand{Hold{}}

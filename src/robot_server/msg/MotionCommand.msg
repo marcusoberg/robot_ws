@@ -36,3 +36,6 @@ float64[] fit_tolerance
 uint64 prediction_observation_sequence
 bool has_predecessor
 uint64 predecessor_command_id
+
+# Empty or one binary state per timed target point, at the same original timestamps.
+bool[] gripper_open_samples

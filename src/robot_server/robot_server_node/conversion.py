@@ -2,8 +2,7 @@
 
 import json, time
 from array import array
-from robot_server_node.protocol import encode_capture
-from robot_server.msg import Observation as ObservationMessage, Capture
+from robot_server.msg import Observation as ObservationMessage, Capture, CapturedImage
 from sensor_msgs.msg import JointState, Image, CameraInfo, CompressedImage
 from geometry_msgs.msg import TransformStamped
 from tf2_msgs.msg import TFMessage
@@ -37,7 +36,10 @@ def capture(value, stream_sequence, host_clock):
         delivery_sequence=stream_sequence,
         host_published_ns=now,
         host_clock=host_clock,
-        packet=array("B", encode_capture(record, {name: image.pixels for name, image in value.images.items()})),
+        observation_json=json.dumps(record),
+        images=[CapturedImage(name=name, image=image(sample, int(record["time_ns"])),
+                    calibration=calibration(sample, int(record["time_ns"])))
+                for name, sample in value.images.items()],
     )
 
 

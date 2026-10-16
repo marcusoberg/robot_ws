@@ -49,18 +49,24 @@ struct ReferencePointRequest {
     std::vector<double> position, velocity, acceleration;
     core::duration offset;
 };
+struct GripperPointRequest {
+    core::duration offset;
+    bool open;
+};
 struct ScheduleRequest {
     JointOrder order;
     core::Time start;
     std::uint64_t epoch;
     std::optional<communication::Id> replaces;
     std::vector<ReferencePointRequest> points;
+    std::vector<GripperPointRequest> gripper;
 };
 // The original sample origin remains fixed. Model-specific output decoding stays external.
 struct TimedJointTargetsRequest {
     static constexpr std::size_t maximum_samples=256;
     JointOrder order;
     std::vector<std::vector<double>> positions;
+    std::vector<bool> gripper_open; // Empty, or one binary tool state per original target timestamp.
     std::string runtime_instance;
     std::uint64_t epoch{}, observation_sequence{};
     core::Time origin{}, start{};

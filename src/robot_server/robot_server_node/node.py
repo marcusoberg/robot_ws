@@ -497,6 +497,8 @@ class RobotServer(Node):
                 self._reply(source, 0, message.command_id, "motion", "canceled", "deadman_or_clutch", self.session.generation, key=key)
                 return
             kwargs = {"observation": basis, "valid_for": message.ttl_ns / 1e9}
+            if message.gripper_open_samples and (message.kind != MotionCommand.TIMED_TARGET_CHUNK or message.has_gripper_command):
+                raise ValueError("scheduled gripper states require timed targets without an immediate gripper command")
             if message.has_gripper_command:
                 kwargs["gripper_open"] = message.gripper_open
             if message.kind == MotionCommand.JOINT_POSITION:
@@ -538,6 +540,7 @@ class RobotServer(Node):
                     lead_ns=message.lead_ns, join_seconds=message.join_ns / 1e9,
                     fit_tolerance=tolerance[0] if len(tolerance) == 1 else tolerance,
                     predecessor=predecessor, joints=tuple(self.description["joints"]),
+                    gripper_open=tuple(message.gripper_open_samples),
                 )
                 operation = self.session.timed_joint_targets(targets, **kwargs)
                 self._event("motion.prepared", {"source": source.name, "command_id": message.command_id,

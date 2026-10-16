@@ -16,7 +16,8 @@
 !/colcon_defaults.yaml
 !/scripts/
 !/docs/
-!/python/
+!/inference/
+!/training/
 !/environments/
 /environments/*
 !/environments/models/
@@ -32,7 +33,6 @@
 /src/*
 !/src/robot_server/
 !/src/model_client/
-!/src/robot_recorder/
 !/src/robot_teleop/
 !/src/robot_examples/
 !/src/robot_bringup/

@@ -12,7 +12,6 @@ ROS_PACKAGES = (
     "robot_examples",
     "robot_teleop",
     "model_client",
-    "robot_recorder",
     "robot_bringup",
 )
 
@@ -51,17 +50,7 @@ def main():
     }
     if not args.build_only:
         run(sdk / "scripts/setup_native.sh", env=env)
-        for name in ("model_api", "recording_tools"):
-            run(
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "--no-deps",
-                "--no-build-isolation",
-                "-e",
-                ROOT / "python" / name,
-            )
+    run(sys.executable, "-m", "pip", "install", "--no-deps", "--no-build-isolation", "-e", ROOT / "inference")
     nanobind_dir = subprocess.check_output(
         [
             str(ROOT / ".workspace/native-env/bin/python"),
@@ -137,7 +126,7 @@ def main():
         env=binding_env,
     )
     if sys.platform == "darwin":
-        for package in ("robot_server", "robot_recorder"):
+        for package in ("robot_server",):
             for binary in (
                 ROOT / "install/ros/lib/python3.12/site-packages" / package
             ).glob(f"{package}_s__*.so"):
@@ -174,7 +163,7 @@ def main():
     )
     if sys.platform == "darwin":
         prefix = Path(sys.prefix) / "lib"
-        for name in ("robot_server", "robot_recorder"):
+        for name in ("robot_server",):
             for library in (ROOT / "install/ros/lib").glob(f"lib{name}*.dylib"):
                 link = prefix / library.name
                 if link.is_symlink():

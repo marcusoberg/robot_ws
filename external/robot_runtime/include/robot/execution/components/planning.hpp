@@ -37,8 +37,10 @@ private:
                 std::visit(
                     [&](const auto &motion) {
                         using T = std::remove_cvref_t<decltype(motion)>;
-                        if constexpr (std::same_as<T, ScheduledMotion>)
-                            reason = planner_.admit(previous.reference, mode, motion, {command.session, command.id}, ctx);
+                        if constexpr (std::same_as<T, ScheduledMotion>) {
+                            reason = motion.hasGripper() && !authority.binary_tool ? RejectReason::InvalidState
+                                : planner_.admit(previous.reference, mode, motion, {command.session, command.id}, ctx);
+                        }
                         else {
                             if constexpr (std::same_as<T, Trajectory>)
                                 if (mode != Mode::Hold ||
@@ -74,6 +76,7 @@ private:
             out.schedule.reset();
         }
         out.demand = planner_.demand(ctx);
+        out.gripper = planner_.gripper(ctx);
         return out;
     }
     Planner planner_;

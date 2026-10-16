@@ -30,7 +30,7 @@ def _(value, n, base, epoch):
 
 @motion.register(TimedJointTargets)
 def _(value,n,base,epoch):
-    out=n.TimedJointTargets();out.positions=value.positions;out.origin_ns=value.origin_ns;out.period_ns=value.period_ns
+    out=n.TimedJointTargets();out.gripper_open=value.gripper_open;out.positions=value.positions;out.origin_ns=value.origin_ns;out.period_ns=value.period_ns
     out.start_ns=0 if value.start_ns is None else value.start_ns;out.lead_ns=value.lead_ns;out.join_seconds=value.join_seconds
     out.runtime_instance=value.basis.runtime_instance;out.epoch=value.basis.timeline_generation;out.observation_sequence=value.basis.observation_sequence
     out.tolerance=[value.fit_tolerance] if __import__("numpy").isscalar(value.fit_tolerance) else value.fit_tolerance

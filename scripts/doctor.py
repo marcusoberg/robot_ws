@@ -18,13 +18,12 @@ def main():
         "robot_runtime",
         "robot_runtime_native",
         "robot_runtime_native._native",
-        "model_api",
-        "recording_tools",
+        "robot_inference",
+        "robot_inference.codec",
         "robot_server_node",
         "robot_examples",
         "robot_teleop",
         "model_client",
-        "robot_recorder_node",
         "robot_server_node.node",
         "robot_server_client",
         "robot_server_client.producer",
@@ -34,7 +33,6 @@ def main():
         "robot_examples.boundary_probe",
         "robot_teleop.keyboard",
         "model_client.client",
-        "robot_recorder_node.node",
     ):
         try:
             module = importlib.import_module(name)
@@ -59,7 +57,6 @@ def main():
         "robot_examples",
         "robot_teleop",
         "model_client",
-        "robot_recorder",
         "robot_bringup",
     ):
         try:
@@ -71,7 +68,7 @@ def main():
                 )
         except Exception as error:
             errors.append(f"{name}: {error}")
-    for name in ("robot_server", "robot_recorder"):
+    for name in ("robot_server",):
         try:
             import_type_support(name)
         except Exception as error:

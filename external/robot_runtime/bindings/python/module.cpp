@@ -255,7 +255,7 @@ NB_MODULE(_native, m) {
     nb::class_<Snapshot>(m, "Snapshot").def_prop_ro("data", &snapshotData);
 
     nb::class_<comm::TimedJointTargetsRequest>(m,"TimedJointTargets").def(nb::init<>())
-        F(comm::TimedJointTargetsRequest,order) F(comm::TimedJointTargetsRequest,positions) F(comm::TimedJointTargetsRequest,runtime_instance)
+        F(comm::TimedJointTargetsRequest,order) F(comm::TimedJointTargetsRequest,positions) F(comm::TimedJointTargetsRequest,gripper_open) F(comm::TimedJointTargetsRequest,runtime_instance)
         F(comm::TimedJointTargetsRequest,epoch) F(comm::TimedJointTargetsRequest,observation_sequence) F(comm::TimedJointTargetsRequest,tolerance)
         .def_prop_rw("origin_ns",[](const comm::TimedJointTargetsRequest &v){return v.origin.time_since_epoch().count();},[](comm::TimedJointTargetsRequest &v,std::int64_t t){v.origin=core::Time{core::duration{t}};})
         .def_prop_rw("start_ns",[](const comm::TimedJointTargetsRequest &v){return v.start.time_since_epoch().count();},[](comm::TimedJointTargetsRequest &v,std::int64_t t){v.start=core::Time{core::duration{t}};})

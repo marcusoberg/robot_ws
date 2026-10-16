@@ -27,6 +27,12 @@ public:
     communication::Command operator()(const CommandRequest &request) const {
         if (request.session.source.value == 0 || request.session.generation == 0 || request.id.value == 0)
             throw std::invalid_argument("command requires nonzero source, generation and id");
+        if (request.gripper_open && std::visit([](const auto &motion) {
+            using T = std::remove_cvref_t<decltype(motion)>;
+            if constexpr (std::same_as<T, TimedJointTargetsRequest>) return !motion.gripper_open.empty();
+            else if constexpr (std::same_as<T, ScheduleRequest>) return !motion.gripper.empty();
+            else return false;
+        }, request.motion)) throw std::invalid_argument("immediate and scheduled gripper commands cannot be combined");
         return {request.session, request.id, request.expiry,
                 std::visit([this](const auto &motion) -> communication::Motion { return (*this)(motion); }, request.motion), request.gripper_open};
     }
@@ -97,7 +103,10 @@ public:
         for (const auto &point : request.points)
             points.push_back({joints<resources::Positions>(request.order, point.position), joints<resources::Velocities>(request.order, point.velocity),
                               joints<resources::Accelerations>(request.order, point.acceleration), point.offset});
-        return execution::Planner{config_}.schedule(execution::PathPoints{std::move(points)}, request.start, request.epoch, request.replaces);
+        std::vector<execution::GripperPoint> gripper;
+        gripper.reserve(request.gripper.size());
+        for (const auto &point : request.gripper) gripper.push_back({point.offset, point.open});
+        return execution::Planner{config_}.schedule(execution::PathPoints{std::move(points)}, request.start, request.epoch, request.replaces, std::move(gripper));
     }
 
     execution::ScheduledMotion operator()(const TimedJointTargetsRequest &request) const {

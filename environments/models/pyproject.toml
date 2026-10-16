@@ -2,13 +2,10 @@
 name = "robot-model-environment"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["model-api", "model-server[lerobot]", "model-training[lerobot]", "recording-tools[lerobot]", "torch==2.10.0", "torchvision==0.25.0", "torchcodec==0.9.1", "scipy>=1.15,<2"]
+dependencies = ["robot-inference", "lerobot[training,smolvla,feetech]==0.6.0", "torch==2.10.0", "torchvision==0.25.0", "torchcodec==0.9.1", "scipy>=1.15,<2"]
 
 [tool.uv.sources]
-model-api = { path = "../../python/model_api", editable = true }
-model-server = { path = "../../python/model_server", editable = true }
-model-training = { path = "../../python/model_training", editable = true }
-recording-tools = { path = "../../python/recording_tools", editable = true }
+robot-inference = { path = "../../inference", editable = true }
 
 [tool.uv]
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'", "sys_platform == 'linux' and platform_machine == 'x86_64'"]

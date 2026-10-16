@@ -9,6 +9,13 @@ The public model downloads to `models/act-base/model`. Use the tracked feature
 contract at `src/model_client/config/act.features.json`. The weights and their
 normalization processors belong together; keep the fetched files unchanged.
 
+## Original SmolVLA base
+
+Use the separate [original SmolVLA walkthrough](04-smolvla-base.md). It uses the
+downloaded upstream weights with a three-camera mapping. Its current result is
+diagnostic inference only because the upstream release lacks usable state/action
+normalization bindings for robot control.
+
 ## Other locally preserved models
 
 The optional `models/act-100` and `models/smolvla-100` bundles from earlier workspace

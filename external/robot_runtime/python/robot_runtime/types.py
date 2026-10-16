@@ -119,8 +119,12 @@ class TimedJointTargets:
     fit_tolerance: float | Sequence[float] = 0.02
     predecessor: MotionOperation | int | None = None
     joints: tuple[str, ...] | None = None
+    gripper_open: Sequence[bool] = ()
     def __post_init__(self):
         object.__setattr__(self,"positions",tuple(tuple(row) for row in self.positions))
+        object.__setattr__(self,"gripper_open",tuple(self.gripper_open))
+        if self.gripper_open and (len(self.gripper_open) != len(self.positions) or any(type(v) is not bool for v in self.gripper_open)):
+            raise ValueError("gripper_open must contain one bool per target row")
         if self.joints is not None: object.__setattr__(self,"joints",tuple(self.joints))
         if not np.isscalar(self.fit_tolerance): object.__setattr__(self,"fit_tolerance",tuple(self.fit_tolerance))
         for name in ("origin_ns","period_ns","lead_ns")+(("start_ns",) if self.start_ns is not None else ()):

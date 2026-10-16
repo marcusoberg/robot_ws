@@ -38,6 +38,7 @@ struct PlanFrame {
     std::array<std::optional<MotionAdmission>, 9> admissions;
     std::optional<communication::Reference> active, canceled;
     std::optional<ScheduleSnapshot> schedule;
+    std::optional<bool> gripper;
 };
 struct ControlFrame {
     Demand demand;

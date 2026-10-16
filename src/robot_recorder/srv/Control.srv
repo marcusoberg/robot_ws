@@ -1,7 +1,0 @@
-# Recording/episode lifecycle only. Robot Server never calls this service.
-string operation
-string arguments_json
----
-bool applied
-string result_json
-string error
