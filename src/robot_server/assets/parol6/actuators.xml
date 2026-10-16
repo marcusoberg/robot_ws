@@ -1,0 +1,56 @@
+<mujocoinclude>
+  <!-- Equivalent joint-side actuator model, NOT an electrical stepper/lost-step model.
+       All gains and forces are referred to the output joint; actuator gear remains 1.
+       Runtime applies tau = kp*(q_ref-q) + kv*(v_ref-v), clipped by forcerange.
+
+       SOURCED: PAROL6 BOM + assembly + firmware, revision
+       45a7502d71d7ec6e0721c711a8642941b0667115:
+       https://github.com/Source-Robotics/PAROL6-Desktop-robot-arm
+       BOM/BOM.md; Building instructions/Parol building instructions.pdf;
+       PAROL6 control board main software/src/{constants.h,motor_init.cpp}.
+       L1,L2: 17HS24-2104S, 0.65 Nm, 2.1 A rated; reductions 6.4,20.
+       L3,L4,L5: 17HS16-2004S1, 0.45 Nm, 2 A rated; reductions 18.0952381,4,4.
+       L6: 17HS08-1004S, 0.16 Nm, 1 A rated; reduction 10.
+       Firmware run-current settings: 2,2,1.9,1.7,1.7,0.965 A.
+       Keep the BOM's 0.65 Nm; newer vendor revisions advertise 0.76 Nm.
+
+       ESTIMATES TO IDENTIFY: torque ceiling = holding torque * reduction *
+       (run current / rated current) * 0.8 assumed transmission efficiency.
+       Current scaling is approximate; these are low-speed ceilings, NOT a measured
+       speed/torque curve. Firmware standstill-current reduction is not simulated.
+       kp (Nm/rad) models effective holding/transmission stiffness; kv (Nm s/rad)
+       models velocity-error damping, initially near critical at the startup pose.
+       joint damping (Nm s/rad) and frictionloss (Nm) are passive losses.
+       armature (kg m^2) retains the old 0.001 joint-side estimate, NOT measured
+       rotor inertia; replace with J_rotor * reduction^2 plus transmission inertia.
+       Link masses/inertias remain the existing CAD values, not hardware-identified.
+       No integral windup, automatic gravity compensation, backlash or missed steps.
+       Tune these parameters against measured hardware before calling this calibrated.
+  -->
+  <default>
+    <default class="drive_L1">
+      <joint damping="0.02" frictionloss="0" armature="0.001"/>
+      <position kp="800" kv="13.3" forcelimited="true" forcerange="-3.16952381 3.16952381"/>
+    </default>
+    <default class="drive_L2">
+      <joint damping="0.02" frictionloss="0" armature="0.001"/>
+      <position kp="1600" kv="24.6" forcelimited="true" forcerange="-9.9047619 9.9047619"/>
+    </default>
+    <default class="drive_L3">
+      <joint damping="0.02" frictionloss="0" armature="0.001"/>
+      <position kp="1400" kv="15.7" forcelimited="true" forcerange="-6.18857143 6.18857143"/>
+    </default>
+    <default class="drive_L4">
+      <joint damping="0.02" frictionloss="0" armature="0.001"/>
+      <position kp="300" kv="1.3" forcelimited="true" forcerange="-1.224 1.224"/>
+    </default>
+    <default class="drive_L5">
+      <joint damping="0.02" frictionloss="0" armature="0.001"/>
+      <position kp="300" kv="1.6" forcelimited="true" forcerange="-1.224 1.224"/>
+    </default>
+    <default class="drive_L6">
+      <joint damping="0.02" frictionloss="0" armature="0.001"/>
+      <position kp="200" kv="0.92" forcelimited="true" forcerange="-1.2352 1.2352"/>
+    </default>
+  </default>
+</mujocoinclude>

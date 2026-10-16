@@ -48,6 +48,7 @@ class MujocoConfiguration:
     binary_actuator: str = ""
     open_position: float = 0.0
     closed_position: float = 0.0
+    velocity_feedforward: bool = False
 
 @dataclass(frozen=True)
 class SerialConfiguration:

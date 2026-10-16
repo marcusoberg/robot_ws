@@ -26,6 +26,7 @@ controller:
 mujoco:
   model: ../assets/parol6/parol6.xml
   base_frame: world
+  velocity_feedforward: true
   binary_actuator: gripper_position
   open_position: 0.0035
   closed_position: 0.0

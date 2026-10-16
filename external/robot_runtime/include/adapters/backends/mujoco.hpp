@@ -16,6 +16,8 @@ struct MujocoConfig {
     // Optional deployment mapping for a binary tool; absent means no binary tool.
     std::string binary_actuator;
     double open_position{}, closed_position{};
+    // Track reference velocity as well as position using the MJCF actuator damping.
+    bool velocity_feedforward{false};
     std::vector<robot::resources::SensorDescription> sensors;
 };
 class MujocoBackend {
@@ -68,6 +70,7 @@ private:
     int binary_actuator_{-1};
     double open_{}, closed_{};
     bool enabled_{false};
+    bool velocity_feedforward_{false};
     std::uint64_t sequence_{1};
 };
 } // namespace adapters::backends

@@ -219,7 +219,7 @@ NB_MODULE(_native, m) {
     nb::class_<adapters::backends::MujocoConfig>(m, "MujocoSpecification").def(nb::init<>())
         F(adapters::backends::MujocoConfig, file) F(adapters::backends::MujocoConfig, base_frame) F(adapters::backends::MujocoConfig, tip_frame)
         F(adapters::backends::MujocoConfig, binary_actuator) F(adapters::backends::MujocoConfig, open_position) F(adapters::backends::MujocoConfig, closed_position)
-        F(adapters::backends::MujocoConfig, sensors);
+        F(adapters::backends::MujocoConfig, velocity_feedforward) F(adapters::backends::MujocoConfig, sensors);
     nb::class_<parol6::config::SerialConfig>(m, "SerialSpecification").def(nb::init<>())
         F(parol6::config::SerialConfig, device) F(parol6::config::SerialConfig, baud) F(parol6::config::SerialConfig, startup_outputs)
         F(parol6::config::SerialConfig, first_response_timeout_seconds) F(parol6::config::SerialConfig, transmission_timeout_seconds)

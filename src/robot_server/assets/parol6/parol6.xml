@@ -19,6 +19,7 @@
     <material name="robot_material" rgba="0.752941 0.752941 0.752941 1"/>
     <material name="tool_material" rgba="0.28 0.3 0.33 1"/>
   </asset>
+  <include file="actuators.xml"/>
   <default>
     <joint damping="0.06" armature="0.001"/>
     <geom friction="0.8 0.02 0.002" condim="3"/>
@@ -55,37 +56,37 @@
       <geom class="visual" mesh="base_visual"/>
       <geom class="collision" type="cylinder" size="0.070 0.045" pos="0 0 0.045"/>
       <body name="L1" pos="0 0 0.1105">
-        <joint name="L1" axis="0 0 1" range="-2.1475731 2.1475731" damping="8"/>
+        <joint name="L1" axis="0 0 1" range="-2.1475731 2.1475731" class="drive_L1"/>
         <inertial pos="0.0052453 0.0289723 0.0992791" mass="0.644801"
                   fullinertia="0.00109429 0.000569962 0.00129488 -0.0000627157 -0.0000570467 -0.000121686"/>
         <geom class="visual" mesh="L1_visual"/>
         <geom class="collision" type="capsule" fromto="0 0 0 0.02 0.02 0.13" size="0.035"/>
         <body name="L2" pos="0.0234207210610375 0 0" euler="-1.57079632679 0 0">
-          <joint name="L2" axis="0 0 1" range="-2.530881 -0.05890486" damping="10"/>
+          <joint name="L2" axis="0 0 1" range="-2.530881 -0.05890486" class="drive_L2"/>
           <inertial pos="-0.00941816 -0.0783880 0.0369430" mass="0.512335"
                     fullinertia="0.00123357 0.000205463 0.00132225 0.00000363236 -0.000000330835 0.000000486442"/>
           <geom class="visual" mesh="L2_visual"/>
           <geom class="collision" type="capsule" fromto="0 0 0 0.18 0 0" size="0.028"/>
           <body name="L3" pos="0.18 0 0" euler="3.14159265359 0 0">
-            <joint name="L3" axis="0 0 1" range="1.88261685 5.02423568" damping="10"/>
+            <joint name="L3" axis="0 0 1" range="1.88261685 5.02423568" class="drive_L3"/>
             <inertial pos="0.0155510 -0.0191128 -0.00153323" mass="0.550971"
                       fullinertia="0.000578276 0.000567012 0.000815862 0.000116505 -0.0000119955 0.0000155814"/>
             <geom class="visual" mesh="L3_visual"/>
             <geom class="collision" type="capsule" fromto="0 0 0 -0.0435 0.17635 0" size="0.030"/>
             <body name="L4" pos="-0.0435 0.17635 0" euler="1.57079632679 0 0">
-              <joint name="L4" axis="0 0 1" range="-1.8407944 1.8407944" damping="5"/>
+              <joint name="L4" axis="0 0 1" range="-1.8407944 1.8407944" class="drive_L4"/>
               <inertial pos="0.000947028 -0.00897895 -0.0924799" mass="0.393464"
                         fullinertia="0.000371673 0.000332364 0.000250607 -0.0000105560 -0.000000156899 -0.0000610397"/>
               <geom class="visual" mesh="L4_visual"/>
               <geom class="collision" type="capsule" fromto="0 0 0 0 0 -0.095" size="0.026"/>
               <body name="L5" euler="-1.57079632679 0 0">
-                <joint name="L5" axis="0 0 1" range="-1.57079632679 1.57079632679" damping="5"/>
+                <joint name="L5" axis="0 0 1" range="-1.57079632679 1.57079632679" class="drive_L5"/>
                 <inertial pos="0.000006716 -0.00621421 -0.000960871" mass="0.185172"
                           fullinertia="0.000109177 0.0000841308 0.000110629 -0.000000127195 0.000000084436 -0.000000441596"/>
                 <geom class="visual" mesh="L5_visual"/>
                 <geom class="collision" type="cylinder" size="0.030 0.035" euler="1.57079632679 0 0"/>
                 <body name="L6" pos="0 0.037 0" euler="1.57079632679 0 0">
-                  <joint name="L6" axis="0 0 1" range="0 6.28318530718" damping="4"/>
+                  <joint name="L6" axis="0 0 1" range="0 6.28318530718" class="drive_L6"/>
                   <inertial pos="0.00632955 -0.000453856 -0.0764442" mass="0.0703261"
                             fullinertia="0.0000140276 0.0000181407 0.0000234608 0.000000315503 -0.000000928470 -0.000000943630"/>
                   <geom class="visual" mesh="L6_visual" pos="0 0 -0.021"/>
@@ -124,12 +125,12 @@
     <exclude body1="L4" body2="pneumatic_jaw"/>
   </contact>
   <actuator>
-    <position name="L1_position" joint="L1" kp="120"/>
-    <position name="L2_position" joint="L2" kp="150"/>
-    <position name="L3_position" joint="L3" kp="150"/>
-    <position name="L4_position" joint="L4" kp="80"/>
-    <position name="L5_position" joint="L5" kp="70"/>
-    <position name="L6_position" joint="L6" kp="60"/>
+    <position name="L1_position" joint="L1" class="drive_L1"/>
+    <position name="L2_position" joint="L2" class="drive_L2"/>
+    <position name="L3_position" joint="L3" class="drive_L3"/>
+    <position name="L4_position" joint="L4" class="drive_L4"/>
+    <position name="L5_position" joint="L5" class="drive_L5"/>
+    <position name="L6_position" joint="L6" class="drive_L6"/>
     <position name="gripper_position" joint="gripper_slide" kp="200"/>
   </actuator>
 </mujoco>

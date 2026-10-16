@@ -5,7 +5,7 @@
         "distance": 1.0,
         "perspective": true
       },
-      "followTf": "base_link",
+      "followTf": "world",
       "layers": {
         "robot": {
           "type": "urdf",
@@ -23,15 +23,33 @@
       "paths": [
         {
           "value": "/robot/tracking_error.data[0]",
-          "enabled": true
+          "enabled": true,
+          "label": "L1 reference minus actual (rad)"
         },
         {
-          "value": "/robot/reference.position[0]",
-          "enabled": true
+          "value": "/robot/tracking_error.data[1]",
+          "enabled": true,
+          "label": "L2 reference minus actual (rad)"
         },
         {
-          "value": "/joint_states.position[0]",
-          "enabled": true
+          "value": "/robot/tracking_error.data[2]",
+          "enabled": true,
+          "label": "L3 reference minus actual (rad)"
+        },
+        {
+          "value": "/robot/tracking_error.data[3]",
+          "enabled": true,
+          "label": "L4 reference minus actual (rad)"
+        },
+        {
+          "value": "/robot/tracking_error.data[4]",
+          "enabled": true,
+          "label": "L5 reference minus actual (rad)"
+        },
+        {
+          "value": "/robot/tracking_error.data[5]",
+          "enabled": true,
+          "label": "L6 reference minus actual (rad)"
         }
       ]
     },

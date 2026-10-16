@@ -13,7 +13,8 @@ void MujocoBackend::DeleteModel::operator()(mjModel *model) const { mj_deleteMod
 void MujocoBackend::DeleteData::operator()(mjData *data) const { mj_deleteData(data); }
 MujocoBackend::~MujocoBackend() = default;
 MujocoBackend::MujocoBackend(robot::Model model, const MujocoConfig &config, const robot::resources::Positions &initial)
-    : model_(std::move(model)), initial_(initial), open_(config.open_position), closed_(config.closed_position) {
+    : model_(std::move(model)), initial_(initial), open_(config.open_position), closed_(config.closed_position),
+      velocity_feedforward_(config.velocity_feedforward) {
 #if mjVERSION_HEADER >= 230
     // Release/wheel distributions place their plugins beside libmujoco.
     // In MuJoCo 3.6 these also provide the standard STL/OBJ decoders.
@@ -70,6 +71,10 @@ MujocoBackend::MujocoBackend(robot::Model model, const MujocoConfig &config, con
         if (m->actuator_ctrllimited[actuator] && (model_.description().lower[i] < m->actuator_ctrlrange[2 * actuator] - range_tolerance ||
                                                   model_.description().upper[i] > m->actuator_ctrlrange[2 * actuator + 1] + range_tolerance))
             throw std::invalid_argument("MuJoCo actuator range cannot cover control limits: " + name);
+        if (velocity_feedforward_ &&
+            (!std::isfinite(m->actuator_biasprm[actuator * mjNBIAS + 2]) ||
+             m->actuator_biasprm[actuator * mjNBIAS + 2] > 0))
+            throw std::invalid_argument("velocity tracking requires nonnegative actuator damping: " + name);
         joints_.push_back(joint);
         actuators_.push_back(actuator);
         d->qpos[m->jnt_qposadr[joint]] = initial.values()[i];
@@ -144,8 +149,16 @@ robot::backend::Delivery MujocoBackend::write(const robot::backend::ActuatorComm
                 m->actuator_gainprm[a * mjNGAIN + j] = enabled_ ? gain_[a * mjNGAIN + j] : 0;
             for (int j = 0; j < mjNBIAS; ++j)
                 m->actuator_biasprm[a * mjNBIAS + j] = enabled_ ? bias_[a * mjNBIAS + j] : 0;
-            if (enabled_)
-                d->ctrl[a] = command.position.values()[static_cast<Eigen::Index>(i)];
+            if (enabled_) {
+                const auto joint = static_cast<Eigen::Index>(i);
+                d->ctrl[a] = command.position.values()[joint];
+                // tau = kp*(q_ref-q) + kv*(v_ref-v). Keep ctrl in position units
+                // and let MuJoCo apply the configured limit to the TOTAL torque.
+                // Bias is restored above on each write, so feedforward cannot accumulate.
+                if (velocity_feedforward_)
+                    m->actuator_biasprm[a * mjNBIAS] -=
+                        bias_[a * mjNBIAS + 2] * command.velocity.values()[joint];
+            }
         }
     }
     if (command.gripper_open && binary_actuator_ >= 0)
