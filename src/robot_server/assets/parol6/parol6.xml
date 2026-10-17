@@ -1,11 +1,6 @@
 <mujoco model="PAROL6">
   <compiler angle="radian" autolimits="true" meshdir="meshes"/>
   <option timestep="0.001" gravity="0 0 -9.81" integrator="implicit"/>
-  <statistic center="0 0 0.2" extent="0.75"/>
-  <visual>
-    <headlight ambient="0.35 0.35 0.35" diffuse="0.7 0.7 0.7"/>
-    <global azimuth="135" elevation="-25"/>
-  </visual>
   <asset>
     <!-- Arm visual assets and local transforms follow parol6.urdf. -->
     <mesh name="base_visual" file="base_link.STL"/>
@@ -19,7 +14,9 @@
     <material name="robot_material" rgba="0.752941 0.752941 0.752941 1"/>
     <material name="tool_material" rgba="0.28 0.3 0.33 1"/>
   </asset>
+
   <include file="actuators.xml"/>
+
   <default>
     <joint damping="0.06" armature="0.001"/>
     <geom friction="0.8 0.02 0.002" condim="3"/>
@@ -30,27 +27,10 @@
       <geom group="3" rgba="0.4 0.6 0.8 0.3"/>
     </default>
   </default>
+
   <worldbody>
-    <camera name="overview" pos="0.75 -0.75 0.65" xyaxes="0.707107 0.707107 0 -0.301511 0.301511 0.904534" fovy="45"/>
-    <geom name="floor" type="plane" size="1 1 0.05" pos="0 0 -0.015"/>
-    <!-- Raised supports, 14 mm cube and an open container. The cube fits
-         the existing 12..15.5 mm asymmetric pneumatic jaw opening. -->
-    <geom name="cube_support" type="box" pos="0.22 -0.075 0.0175" size="0.025 0.025 0.0325" rgba="0.3 0.35 0.4 1"/>
-    <body name="cube" pos="0.22 -0.075 0.057">
-      <freejoint name="cube_free"/>
-      <geom name="cube" type="box" size="0.007 0.007 0.007" mass="0.005"
-            rgba="0.15 0.85 0.20 1" friction="1.5 0.01 0.001" condim="4"/>
-    </body>
-    <body name="container" pos="0.22 0.08 0.05">
-      <geom name="container_support" type="box" pos="0 0 -0.0325" size="0.04 0.04 0.0325" rgba="0.3 0.35 0.4 1"/>
-      <geom name="container_bottom" type="box" pos="0 0 0.003" size="0.04 0.04 0.003" rgba="0.65 0.38 0.18 1"/>
-      <geom name="container_left" type="box" pos="-0.037 0 0.018" size="0.003 0.04 0.018" rgba="0.65 0.38 0.18 1"/>
-      <geom name="container_right" type="box" pos="0.037 0 0.018" size="0.003 0.04 0.018" rgba="0.65 0.38 0.18 1"/>
-      <geom name="container_front" type="box" pos="0 -0.037 0.018" size="0.034 0.003 0.018" rgba="0.65 0.38 0.18 1"/>
-      <geom name="container_back" type="box" pos="0 0.037 0.018" size="0.034 0.003 0.018" rgba="0.65 0.38 0.18 1"/>
-    </body>
-    <!-- Match the URDF world-to-base_link mounting rotation. -->
-    <body name="base" euler="0 0 -1.5707963267948966">
+    <!-- The robot base is aligned with world, as in the URDF. -->
+    <body name="base" pos="0 0 0">
       <inertial pos="-0.0274562 -0.00137265 0.0312379" mass="0.812661"
                 fullinertia="0.00110740 0.00106582 0.00147883 0.0000467463 0.00000847874 -0.00000261941"/>
       <geom class="visual" mesh="base_visual"/>
@@ -62,13 +42,13 @@
         <geom class="visual" mesh="L1_visual"/>
         <geom class="collision" type="capsule" fromto="0 0 0 0.02 0.02 0.13" size="0.035"/>
         <body name="L2" pos="0.0234207210610375 0 0" euler="-1.57079632679 0 0">
-          <joint name="L2" axis="0 0 1" range="-2.530881 -0.05890486" class="drive_L2"/>
+          <joint name="L2" axis="0 0 1" range="-2.5308810043659533 -0.05890486225480862" class="drive_L2"/>
           <inertial pos="-0.00941816 -0.0783880 0.0369430" mass="0.512335"
                     fullinertia="0.00123357 0.000205463 0.00132225 0.00000363236 -0.000000330835 0.000000486442"/>
           <geom class="visual" mesh="L2_visual"/>
           <geom class="collision" type="capsule" fromto="0 0 0 0.18 0 0" size="0.028"/>
           <body name="L3" pos="0.18 0 0" euler="3.14159265359 0 0">
-            <joint name="L3" axis="0 0 1" range="1.88261685 5.02423568" class="drive_L3"/>
+            <joint name="L3" axis="0 0 1" range="1.8826168509562036 5.024235684484776" class="drive_L3"/>
             <inertial pos="0.0155510 -0.0191128 -0.00153323" mass="0.550971"
                       fullinertia="0.000578276 0.000567012 0.000815862 0.000116505 -0.0000119955 0.0000155814"/>
             <geom class="visual" mesh="L3_visual"/>
@@ -118,6 +98,13 @@
     <exclude body1="base" body2="L1"/>
     <exclude body1="base" body2="L2"/>
     <exclude body1="L1" body2="L3"/>
+    <!-- Coarse primitives overlap at the L2/L3 lower-limit pose, while the
+         CAD meshes have 38/41 mm clearance. Upstream PAROL6's SRDF also
+         excludes L1-L4 and L1-L5 as simplified-geometry artifacts:
+         PCrnjak/PAROL6-python-API, parol6/urdf_model/srdf/PAROL6.srdf
+         (reference revision a005188813521a18b6150739597a92c0a0224af7). -->
+    <exclude body1="L1" body2="L4"/>
+    <exclude body1="L1" body2="L5"/>
     <exclude body1="L3" body2="L5"/>
     <exclude body1="L3" body2="L6"/>
     <exclude body1="L4" body2="L6"/>

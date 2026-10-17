@@ -1,19 +1,20 @@
 robot:
   description: ../assets/parol6/parol6.urdf
-  # Cartesian commands stay in world; the URDF rotates base_link within it.
+  # Cartesian commands and the robot mounting frame are aligned with world.
   base: world
   tip: tool_tcp
+  # Start 0.1 degree inside L2/L3 stops: soft simulation limits allow tiny deflection.
   initial:
   - 1.5707963267948966
-  - -1.5707963267948966
-  - 3.141592653589793
+  - -2.529135675113959
+  - 1.8843621802081978
   - 0
   - 0
   - 3.141592653589793
   standby:
   - 1.5707963267948966
-  - -1.5707963267948966
-  - 3.141592653589793
+  - -2.529135675113959
+  - 1.8843621802081978
   - 0
   - 0
   - 3.141592653589793
@@ -24,7 +25,7 @@ controller:
   acceleration_time: 0.3333333333333333
   jerk_time: 0.1
 mujoco:
-  model: ../assets/parol6/parol6.xml
+  model: ../assets/parol6/scene.xml
   base_frame: world
   velocity_feedforward: true
   binary_actuator: gripper_position
@@ -46,10 +47,10 @@ serial:
   - L5
   - L6
 cameras:
-- name: overview
-  width: 320
-  height: 240
-  depth: true
-  frame: overview
-  calibration: parol6-overview-v1
+- name: front
+  width: 640
+  height: 480
+  depth: false
+  frame: front
+  calibration: parol6-front-v2
   frequency: 20

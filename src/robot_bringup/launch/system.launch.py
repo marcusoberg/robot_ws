@@ -27,7 +27,6 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("mode", default_value="realtime"),
             DeclareLaunchArgument("foxglove", default_value="true"),
-            DeclareLaunchArgument("example", default_value="false"),
             DeclareLaunchArgument("model", default_value="false"),
             DeclareLaunchArgument(
                 "model_config",
@@ -47,12 +46,6 @@ def generate_launch_description():
                     "mode": LaunchConfiguration("mode"),
                     "foxglove": LaunchConfiguration("foxglove"),
                 },
-            ),
-            include(
-                "robot_examples",
-                "example.launch.py",
-                {},
-                IfCondition(LaunchConfiguration("example")),
             ),
             include(
                 "model_client",

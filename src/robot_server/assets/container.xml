@@ -1,0 +1,8 @@
+<mujoco>
+  <!-- Container geometry; its pose belongs to each scene. -->
+      <geom class="scene_geom" name="container_bottom" type="box" size="0.045 0.045 0.0025" pos="0 0 0.0025" rgba="0.8 0.6 0.4 1" />
+      <geom class="scene_geom" name="container_side_x_neg" type="box" size="0.0025 0.04 0.01" pos="-0.0425 0 0.01" rgba="0.8 0.6 0.4 1" />
+      <geom class="scene_geom" name="container_side_x_pos" type="box" size="0.0025 0.04 0.01" pos="0.0425 0 0.01" rgba="0.8 0.6 0.4 1" />
+      <geom class="scene_geom" name="container_side_y_neg" type="box" size="0.045 0.0025 0.01" pos="0 -0.0425 0.01" rgba="0.8 0.6 0.4 1" />
+      <geom class="scene_geom" name="container_side_y_pos" type="box" size="0.045 0.0025 0.01" pos="0 0.0425 0.01" rgba="0.8 0.6 0.4 1" />
+</mujoco>

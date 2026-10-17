@@ -1,0 +1,23 @@
+<mujoco>
+  <!-- Shared environment; robot models and cameras belong to their scenes. -->
+  <default>
+    <default class="scene_geom">
+      <geom friction="1.0 0.005 0.0001" solimp="0.99 0.99 0.001" solref="0.01 1" condim="3"/>
+    </default>
+  </default>
+  <visual>
+    <headlight diffuse=".4 .4 .4" ambient=".5 .5 .5" />
+    <global azimuth="0" elevation="-30" offheight="480" offwidth="640" />
+    <quality offsamples="8" />
+  </visual>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512" />
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4" />
+    <material name="grid" texture="grid" texrepeat="30 30" texuniform="true" reflectance="0" />
+  </asset>
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" diffuse="1 1 1" specular=".3 .3 .3"/>
+    <light pos="0.2 0.3 .5" mode="targetbodycom" target="block" diffuse=".8 .8 .8" specular=".3 .3 .3"/>
+    <geom class="scene_geom" name="floor" type="plane" size="3 3 0.01" material="grid"/>
+  </worldbody>
+</mujoco>

@@ -21,16 +21,14 @@ def main():
         "robot_inference",
         "robot_inference.codec",
         "robot_server_node",
-        "robot_examples",
         "robot_teleop",
         "model_client",
         "robot_server_node.node",
         "robot_server_client",
         "robot_server_client.producer",
-        "robot_examples.operator",
-        "robot_examples.send_joint",
-        "robot_examples.send_timed_targets",
-        "robot_examples.boundary_probe",
+        "robot_server_client.activation",
+        "robot_teleop.so101",
+        "robot_teleop.space_key",
         "robot_teleop.keyboard",
         "model_client.client",
     ):
@@ -54,7 +52,6 @@ def main():
             errors.append(f"{name}: {error}")
     for name in (
         "robot_server",
-        "robot_examples",
         "robot_teleop",
         "model_client",
         "robot_bringup",

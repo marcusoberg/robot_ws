@@ -16,12 +16,10 @@ needed. Run all commands from the directory containing this README.
 | --- | --- |
 | `external/robot_runtime` | ROS-free C++ SDK and matching Python bindings (`Configuration`, `Robot`, `ControlSession`, `Observation`). |
 | `src/robot_server` | Owns robot/backend/camera configuration, accepts commands, publishes observations and visualization topics. Its launch file includes Foxglove Bridge. |
-| `src/model_client` | Reads captures, requests inference and submits timestamped joint targets. Does not acquire authority itself. |
-| `python/model_api` | `policy.v1` schemas and WebSocket client. |
-| `python/model_server` | Loads model weights/processors and produces predictions; no ROS or robot connection. |
-| `python/model_training` | Optional training and optimizer-resume utilities. Existing wrappers use short smoke-training settings. |
-| `src/robot_recorder`, `python/recording_tools` | Episode recording to MCAP, alignment and LeRobot dataset export. |
-| `src/robot_teleop`, `src/robot_examples` | Independent command producers and the `robotctl` operator command. |
+| `src/model_client` | Reads captures, requests inference and submits timestamped joint targets. Requests activation through Robot Server; never controls the SDK directly. |
+| `inference` | Protobuf/WebSocket model serving, processors and portable bundles; no ROS or robot connection. |
+| `training` | Direct LeRobot training, configurations, datasets and training runs. |
+| `src/robot_teleop` | SO101/keyboard teleoperation and demonstration collection. |
 | `src/robot_bringup` | ROS launch files that compose the packages. |
 | `scripts`, `environments/models` | Workspace setup/build tools and an isolated optional Torch/LeRobot environment. |
 | `docs` | Tutorials, guides, API reference and developer notes. |
@@ -32,7 +30,7 @@ flowchart LR
     Client -->|policy.v1 request| Model[Model Server / ACT]
     Model -->|joint target chunk| Client
     Client -->|ROS commands and heartbeat| Captures
-    Operator[robotctl] -->|enable / select / stop| Captures
+    Operator[Teleop Space / model engage] -->|activate / pause| Captures
     Captures --> SDK[C++ SDK]
     SDK --> Sim[MuJoCo]
     Captures -->|TF / joints / images| Bridge[Foxglove Bridge]
@@ -187,7 +185,7 @@ ros2 launch model_client client.launch.py
 ```
 
 Leave it running. It advertises the producer name `model`, sends heartbeats and
-waits for explicit selection before submitting motion.
+waits for `/model/engage` activation before submitting motion.
 
 ## 6. Terminal D — watch results before enabling motion
 
@@ -198,50 +196,28 @@ ros2 topic echo /robot/result
 Keep this terminal open **before** running the commands in terminal E. The echo
 command keeps running, and starting it afterwards can miss the control events.
 
-## 7. Terminal E — explicitly enable and select ACT
+## 7. Terminal E — activate ACT
 
 ```sh
-pixi run robotctl sources --timeout 30
-pixi run robotctl status --timeout 30
-pixi run robotctl enable --timeout 30
-pixi run robotctl select model --timeout 30
+ros2 service call /model/engage std_srvs/srv/SetBool '{data: true}'
 ```
 
-`sources` should show exactly one live producer named `model`. Watch terminal D
-for actual results and Foxglove's camera panels for the attempt. A service response
-with `queued: true` is only receipt, not proof of admission or motion completion.
-
-`/robot/result` outcome codes are `0` queued, `1` admitted, `2` completed,
-`3` rejected and `4` canceled. The reason accompanies each result. A completed
-control operation with `command_id: 0` is not evidence that an ACT trajectory ran.
-For predictions, look for command results and changing joint/reference values.
-
-If another source is already selected, inspect `status` first. To deliberately
-switch to the live model producer, use:
-
-```sh
-pixi run robotctl takeover model --timeout 30
-```
-
-Do not keep sending `select` to an already selected source. If no model producer
-is listed, check terminal C. If inference fails, check terminal B.
+The Model Client requests activation directly from Robot Server. The server enables
+and acquires its native session; another producer is never taken over. The service
+acknowledges submission; wait for `Active` in the Model Client log and inspect
+`/robot/result` for actual outcomes.
 
 ## 8. Stop and repeat
 
-In terminal E, stop and disable before closing the other processes:
-
 ```sh
-pixi run robotctl stop --timeout 30
-pixi run robotctl disable --timeout 30
+ros2 service call /model/engage std_srvs/srv/SetBool '{data: false}'
 ```
 
-Then Ctrl-C terminals C, B, D and A. For a new attempt, restart terminal A to get a
-fresh scene, restart the other processes, and enable/select again.
+Wait for `Paused; robot holds position`, then Ctrl+C the launch processes.
+Restart the server for a fresh scene and activate explicitly again.
 
-For this walkthrough, restart the Robot Server instead of calling `robotctl reset`
-while cameras run. A known reset/capture race can leave the camera worker stopped
-with `capture belongs to a previous timeline`; the current workaround is restarting
-the server and Model Client.
+For SO101 teleoperation, launch `robot_teleop so101_parol6.launch.py` with the leader
+port and tap Space in its terminal. See [teleop controls](src/robot_teleop/README.md).
 
 ## Troubleshooting
 
@@ -250,7 +226,7 @@ the server and Model Client.
 | `ros2: command not found` | Enter a fresh Pixi shell from this clone. Check `command -v python` and `command -v ros2`; both should resolve inside its `.pixi/envs/default`. Ensure shell startup does not activate Conda over Pixi. |
 | `Robot state unavailable` | Keep terminal A running, activate the same workspace in every terminal, use `--timeout 30`, and check `ROS_DOMAIN_ID` (the workspace sets 42). |
 | `ConnectionRefusedError` on port 8000 | Start terminal B and wait for `Policy ready` before requesting inference. |
-| Sources are listed but the robot does not move | Check explicit enable/selection, camera updates, terminal B/C errors and `/robot/result` rejection reasons. Heartbeats alone do not start motion. |
+| Sources are listed but the robot does not move | Check the model activation result, camera updates, terminal B/C errors and `/robot/result` rejection reasons. Heartbeats alone do not start motion. |
 | Cameras stop after reset | Stop/disable, restart server and client, and run the sequence again. |
 | CUDA/MPS unavailable | Choose a device present on that computer. CPU is supported but slower inference can cause late predictions to be rejected. |
 | Headless Linux renderer fails | Set `export MUJOCO_GL=egl` in terminal A before launching, with a working EGL driver installed. |

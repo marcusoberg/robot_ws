@@ -13,8 +13,8 @@ gripper_threshold: 0.5
 # Collection pairs observation(t) with executed reference(t + 50 ms).
 action_time_offset_ns: 50000000
 cameras:
-  observation.images.overview: overview/rgb
-resolution: [320, 240]
+  observation.images.front: front/rgb
+resolution: [640, 480]
 period: 0.05
 fit_tolerance: 0.1
 join_seconds: 1.0

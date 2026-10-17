@@ -10,7 +10,6 @@ from queue import Empty, Full, Queue
 import threading
 import time
 from uuid import UUID, uuid4
-import xml.etree.ElementTree as ET
 
 import numpy as np
 import rclpy
@@ -71,6 +70,7 @@ class Pending:
     session_generation: int
     key: tuple | None = None
     last_outcome: str = "queued"
+    enable_then_acquire: bool = False
 
 
 class RobotServer(Node):
@@ -103,7 +103,6 @@ class RobotServer(Node):
         self.result_pub = self.create_publisher(CommandResult, "/robot/result", EVENTS)
         self.joints_pub = self.create_publisher(JointState, "/joint_states", LATEST)
         self.tf_pub = self.create_publisher(TFMessage, "/tf", LATEST)
-        self.static_tf_pub = self.create_publisher(TFMessage, "/tf_static", DESCRIPTION)
         self.reference_pub = self.create_publisher(JointState, "/robot/reference", LATEST)
         self.tracking_pub = self.create_publisher(Float64MultiArray, "/robot/tracking_error", LATEST)
         self.ownership_pub = self.create_publisher(String, "/robot/ownership", LATEST)
@@ -148,36 +147,16 @@ class RobotServer(Node):
         self.camera_error = None
         self.server_error = None
         self.scene_frames = SceneFrames(self.configuration, self.description) if self.backend == "mujoco" else None
-        self.static_frames = self._fixed_frames()
         self._publish_description()
-        self._publish_static(self.initial)
         self._publish_state(self.initial)
         self.worker = threading.Thread(target=self._work, name="robot-ros-adapter", daemon=False)
         self.worker.start()
         self.get_logger().info(f"Robot server ready ({self.backend}, {self.mode}); DISABLED and no selected source")
 
-    def _fixed_frames(self):
-        tree = ET.parse(self.configuration.robot.description)
-        reachable = {self.description["base"]}
-        edges = [(j.find("parent").get("link"), j.find("child").get("link"))
-                 for j in tree.getroot().findall("joint") if j.get("type") == "fixed"]
-        while added := {child for parent, child in edges if parent in reachable} - reachable:
-            reachable.update(added)
-        return reachable - {self.description["base"]}
-
     def _publish_description(self):
         description = {**self.description, "server": {"mode": self.mode, "backend": self.backend, "action_period": self.action_period}}
         self.description_pub.publish(String(data=dumps(description)))
         self.urdf_pub.publish(String(data=self.configuration.robot.description.read_text()))
-
-    def _publish_static(self, value):
-        if value.joints is None:
-            return
-        poses = self.robot.frames(value)
-        self.static_tf_pub.publish(TFMessage(transforms=[
-            conversion.transform(self.description["base"], name, poses[name], 0)
-            for name in sorted(self.static_frames)
-        ]))
 
     def _cache_basis(self, value):
         # Native snapshot handles remain usable; image arrays do not accumulate.
@@ -208,7 +187,6 @@ class RobotServer(Node):
         ))
         if value.joints is not None:
             self.joints_pub.publish(conversion.joints(value, self.description))
-            self.tf_pub.publish(conversion.frames(self.robot, value, exclude=self.static_frames))
             reference = conversion.joints(value, self.description)
             reference.position = list(value.reference["position"])
             reference.velocity = list(value.reference["velocity"])
@@ -354,7 +332,7 @@ class RobotServer(Node):
                     for name, value in saved.items():
                         setattr(response, name, value)
                     return response
-                if request.action > Control.Request.STATUS:
+                if request.action > Control.Request.DEACTIVATE:
                     raise ValueError("unknown control action")
                 self.next_request += 1
                 response.request_id = self.next_request
@@ -554,6 +532,12 @@ class RobotServer(Node):
         except (ValueError, TypeError, RuntimeError) as error:
             self._reply(source, 0, message.command_id, "motion", "rejected", str(error), message.session_generation, key=key)
 
+    def _cancel_activations(self, reason):
+        for pending in self.pending:
+            if pending.name == "activate":
+                self._reply(pending.source, pending.request_id, 0, "activate", "canceled", reason)
+        self.pending = [p for p in self.pending if p.name != "activate"]
+
     def _handle_control(self, value):
         request_id, action, name, instance = value
         source = None
@@ -562,8 +546,41 @@ class RobotServer(Node):
             operations = {Control.Request.ENABLE: "enable", Control.Request.DISABLE: "disable", Control.Request.STOP: "stop",
                           Control.Request.HOLD: "hold", Control.Request.STANDBY: "standby", Control.Request.OPEN_GRIPPER: "open_gripper",
                           Control.Request.CLOSE_GRIPPER: "close_gripper"}
-            if action in operations:
+            if action in (Control.Request.ACTIVATE, Control.Request.DEACTIVATE):
+                operation_name = "activate" if action == Control.Request.ACTIVATE else "deactivate"
+                source = self._source(name, instance)
+                if self.selected is not None and source is not self.selected:
+                    raise ValueError("another producer owns the robot; deactivate it first")
+                activating = [p for p in self.pending if p.name == "activate"]
+                if any(p.source is not source for p in activating):
+                    raise ValueError("another producer is activating")
+                if action == Control.Request.DEACTIVATE:
+                    self._cancel_activations("producer deactivated")
+                    mode = self.robot.observe().mode.value
+                    operation = None if mode in ("DISABLED", "FAULT") else self.robot.hold()
+                    self.selected = self.session = self.input_blocked = None
+                else:
+                    if activating:
+                        raise ValueError("activation is already pending")
+                    if time.monotonic() - source.seen >= 0.3:
+                        raise ValueError("producer heartbeat is not fresh")
+                    if self.selected is source and self.session is not None and self.session.valid:
+                        self._reply(source, request_id, 0, operation_name, "completed", generation=self.session.generation)
+                        return
+                    mode = self.robot.observe().mode.value
+                    if mode not in ("DISABLED", "HOLD"):
+                        raise ValueError("activation requires a disabled or holding robot; current mode: " + mode)
+                    enable = mode == "DISABLED"
+                    operation = self.robot.enable() if enable else source.handle.acquire_control()
+                    self.pending.append(Pending(operation, source, request_id, 0, "activate", 0,
+                                                enable_then_acquire=enable))
+                    self._reply(source, request_id, 0, "activate", "queued")
+                    return
+            elif action in operations:
                 operation_name = operations[action]
+                if action in (Control.Request.ENABLE, Control.Request.DISABLE, Control.Request.STOP,
+                              Control.Request.HOLD, Control.Request.STANDBY):
+                    self._cancel_activations("operator " + operation_name)
                 operation = getattr(self.robot, operation_name)()
                 if action in (Control.Request.DISABLE, Control.Request.STOP, Control.Request.HOLD, Control.Request.STANDBY):
                     self.selected = None
@@ -576,6 +593,8 @@ class RobotServer(Node):
                     raise ValueError("source heartbeat is no longer live")
                 if action == Control.Request.SELECT and self.session is not None and self.session.valid:
                     raise ValueError("a source is already selected; use release or explicit takeover")
+                if any(p.name == "activate" for p in self.pending):
+                    raise ValueError("producer activation is pending")
                 operation = source.handle.acquire_control(takeover=action == Control.Request.TAKEOVER)
             elif action == Control.Request.RELEASE:
                 operation_name = "release"
@@ -608,14 +627,31 @@ class RobotServer(Node):
             try:
                 result = pending.operation.outcome
                 outcome = result.outcome.value
-                if outcome == "completed" and pending.name in ("select", "takeover"):
+                if outcome == "completed" and pending.enable_then_acquire:
+                    if time.monotonic() - pending.source.seen >= 0.3:
+                        raise ValueError("producer heartbeat lost during activation")
+                    pending.operation = pending.source.handle.acquire_control()
+                    pending.enable_then_acquire = False
+                    remaining.append(pending)
+                    continue
+                if outcome == "completed" and pending.name in ("select", "takeover", "activate"):
                     session = pending.operation.result(timeout=0)
                     self.selected, self.session = pending.source, session
                     self.input_blocked = None
                     pending.session_generation = session.generation
                     self._event("authority.selected", self._source_metadata(self.selected))
                 if outcome != pending.last_outcome:
-                    self._reply(pending.source, pending.request_id, pending.command_id, pending.name, outcome, result.reason,
+                    reason = result.reason
+                    if pending.enable_then_acquire and outcome == "rejected" and reason == "invalid_state":
+                        observed = self.robot.observe()
+                        if observed.joints is not None:
+                            outside = [f"{name}={q:.6f} outside [{lo:.6f}, {hi:.6f}] rad"
+                                       for name, q, lo, hi in zip(self.description["joints"], observed.joints.position,
+                                                                 self.description["lower"], self.description["upper"])
+                                       if q < lo or q > hi]
+                            if outside:
+                                reason += "; measured joint limits: " + "; ".join(outside)
+                    self._reply(pending.source, pending.request_id, pending.command_id, pending.name, outcome, reason,
                                 pending.session_generation, getattr(pending.operation, "command_id", 0), pending.key)
                     pending.last_outcome = outcome
                 if pending.name == "motion" and outcome in ("accepted", "completed"):
@@ -659,6 +695,7 @@ class RobotServer(Node):
             elif name == "reset":
                 if self.backend != "mujoco":
                     raise ValueError("hardware has no simulation reset capability")
+                self._cancel_activations("simulation reset")
                 value = self.robot.reset()
                 self.selected, self.session = None, None
                 self.input_blocked = None
@@ -667,7 +704,6 @@ class RobotServer(Node):
                 self.last_capture = None
                 self._poll_operations()
                 self._publish_state(value)
-                self._publish_static(value)
                 self._event("runtime.reset", basis=value)
             else:
                 value = self.robot.capture() if self.configuration.cameras or self.configuration.external_sensors else self.robot.observe()

@@ -11,6 +11,8 @@ from robot_server.msg import Capture, MotionCommand, CommandResult
 from trajectory_msgs.msg import JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
 from robot_server_client import Producer
+from robot_server_client.activation import Activation
+from std_srvs.srv import SetBool
 import numpy as np
 from robot_inference import Features, PolicyInput, RemoteModel
 from .capture import decode_capture
@@ -24,6 +26,8 @@ class ModelClient(Producer):
                 "State/action calibration is required before control."
             )
         super().__init__(source)
+        self.activation = Activation(self, self.get_logger().info)
+        self.create_service(SetBool, "/model/engage", self.engage)
         self.config, self.url, self.instruction = config, url, instruction
         self.features = Features(
             state_joints=tuple(config["joints"]),
@@ -112,7 +116,16 @@ class ModelClient(Producer):
         )
         return self.remote.predict(value)
 
+    def engage(self, request, response):
+        try:
+            self.activation.request(request.data)
+            response.success, response.message = True, "requested; inspect /robot/result and model logs for completion"
+        except ValueError as error:
+            response.success, response.message = False, str(error)
+        return response
+
     def advance(self):
+        self.activation.tick()
         if self.candidate is not None:
             result = self.results.get(self.candidate)
             if result and result.outcome in (
@@ -130,7 +143,7 @@ class ModelClient(Producer):
             future, self.future = self.future, None
             try:
                 prediction, timing = future.result()
-                if not self.selected:
+                if not self.selected or not self.activation.active:
                     return
                 current_epoch = (
                     self.state["identity"]["runtime_instance"],
@@ -198,6 +211,7 @@ class ModelClient(Producer):
             self.future is None
             and self.candidate is None
             and self.selected
+            and self.activation.active
             and self.capture is not None
             and not (self.state.get("schedule") or {}).get("pending")
         ):

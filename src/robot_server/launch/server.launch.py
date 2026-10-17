@@ -2,13 +2,28 @@
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.launch_description_sources import AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from pathlib import Path
+
+
+def robot_state_publisher(context):
+    from robot_runtime import Configuration
+
+    config = Configuration.from_yaml(Path(LaunchConfiguration("deployment").perform(context)))
+    return [Node(
+        package="robot_state_publisher", executable="robot_state_publisher",
+        name="robot_state_publisher", output="screen", parameters=[{
+            "robot_description": ParameterValue(config.robot.description.read_text(), value_type=str),
+            "use_sim_time": LaunchConfiguration("backend").perform(context) == "mujoco",
+            # Simulation reset can move the observation clock backwards.
+            "ignore_timestamp": True,
+        }],
+    )]
 
 
 def generate_launch_description():
@@ -27,6 +42,7 @@ def generate_launch_description():
             "mode": LaunchConfiguration("mode"),
             "action_period": ParameterValue(LaunchConfiguration("action_period"), value_type=float),
         }]),
+        OpaqueFunction(function=robot_state_publisher),
         # Keep the bridge's generic arguments (notably port) local to its launch.
         GroupAction(scoped=True, actions=[IncludeLaunchDescription(
             AnyLaunchDescriptionSource(str(bridge / "launch/foxglove_bridge_launch.xml")),

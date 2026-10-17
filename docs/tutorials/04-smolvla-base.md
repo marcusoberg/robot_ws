@@ -24,8 +24,7 @@ Stop any previous robot/model session. If motion is enabled, run these in its
 operator terminal before closing processes:
 
 ```sh
-pixi run robotctl stop --timeout 30
-pixi run robotctl disable --timeout 30
+ros2 service call /model/engage std_srvs/srv/SetBool '{data: false}'
 ```
 
 Then Ctrl-C the old client, model server and robot launch. In each new terminal:

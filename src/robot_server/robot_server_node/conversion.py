@@ -5,7 +5,6 @@ from array import array
 from robot_server.msg import Observation as ObservationMessage, Capture, CapturedImage
 from sensor_msgs.msg import JointState, Image, CameraInfo, CompressedImage
 from geometry_msgs.msg import TransformStamped
-from tf2_msgs.msg import TFMessage
 
 
 def header(target, time_ns, frame):
@@ -71,16 +70,6 @@ def transform(parent, child, pose, time_ns):
         result.transform.rotation.z,
     ) = map(float, pose.quaternion_wxyz)
     return result
-
-
-def frames(robot, value, *, exclude=()):
-    return TFMessage(
-        transforms=[
-            transform(robot.description["base"], name, pose, round(value.time * 1e9))
-            for name, pose in robot.frames(value).items()
-            if name != robot.description["base"] and name not in exclude
-        ]
-    )
 
 
 def image(sample, time_ns):

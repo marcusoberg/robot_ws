@@ -9,6 +9,7 @@ import tty
 import rclpy
 from robot_server.msg import MotionCommand
 from robot_server_client import Producer
+from robot_server_client.activation import Activation
 
 
 def main():
@@ -19,6 +20,7 @@ def main():
         parser.error("Keyboard control needs an interactive terminal.")
     rclpy.init()
     node = Producer(args.source)
+    activation = Activation(node, lambda text: print(text, flush=True))
     saved = termios.tcgetattr(sys.stdin)
     index = 0
     clutch = False
@@ -29,11 +31,12 @@ def main():
         q = node.positions()
         tty.setcbreak(sys.stdin.fileno())
         print(
-            "1..9 joint; j/k +/-0.015; d toggles deadman; space clutch; q quits. Start with deadman OFF. Enable and select keyboard in another terminal.",
+            "1..9 joint; j/k +/-0.015; d toggles deadman; space clutch; q quits. Start with deadman OFF. d requests activation directly from the server.",
             flush=True,
         )
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0.02)
+            activation.tick()
             selected = bool(node.selected)
             if selected and not was_selected:
                 q = node.positions()
@@ -45,9 +48,13 @@ def main():
                 if key.isdigit() and 0 < int(key) <= len(q):
                     index = int(key) - 1
                 if key == "d":
-                    deadman = not deadman
+                    deadman = not (activation.active or activation.pending)
+                    try:
+                        activation.request(deadman)
+                    except ValueError as error:
+                        deadman = False
+                        print(str(error), flush=True)
                     q = node.positions()
-                    print(f"deadman={deadman}", flush=True)
                 if key == " ":
                     clutch = not clutch
                     q = node.positions()
@@ -61,7 +68,7 @@ def main():
                         ),
                     )
             command = node.command(
-                MotionCommand.JOINT_POSITION, deadman=deadman, clutch=clutch
+                MotionCommand.JOINT_POSITION, deadman=deadman and activation.active, clutch=clutch
             )
             if command:
                 command.values = q

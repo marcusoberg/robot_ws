@@ -9,7 +9,6 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 ROS_PACKAGES = (
     "robot_server",
-    "robot_examples",
     "robot_teleop",
     "model_client",
     "robot_bringup",

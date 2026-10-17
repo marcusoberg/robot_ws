@@ -16,8 +16,8 @@
       }
     },
     "Image!front": {
-      "imageTopic": "/robot/cameras/overview/rgb",
-      "cameraInfoTopic": "/robot/cameras/overview/rgb/camera_info"
+      "imageTopic": "/robot/cameras/front/rgb",
+      "cameraInfoTopic": "/robot/cameras/front/rgb/camera_info"
     },
     "Plot!tracking": {
       "paths": [
@@ -63,9 +63,6 @@
           "enabled": true
         }
       ]
-    },
-    "Image!depth": {
-      "imageTopic": "/robot/cameras/overview/depth"
     }
   },
   "layout": {

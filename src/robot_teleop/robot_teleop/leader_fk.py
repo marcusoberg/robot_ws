@@ -1,4 +1,4 @@
-"""SO101 forward kinematics and frame mapping only. PAROL6 IK stays in the SDK."""
+"""SO101 forward kinematics and frame mapping only. Robot IK stays in the SDK."""
 import xml.etree.ElementTree as ET
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -39,11 +39,14 @@ class LeaderFK:
         self.mount = transform(config["robot_from_leader"])
         self.tool = transform(config["handle_to_tool"])
 
-    def pose(self, degrees):
+    def angles(self, degrees):
         q = self.sign * np.deg2rad(degrees) + self.offset
         if q.shape != (5,) or not np.isfinite(q).all():
             raise ValueError("Invalid leader angles")
-        angles = dict(zip(JOINTS, q))
+        return dict(zip(JOINTS, q))
+
+    def pose(self, degrees):
+        angles = self.angles(degrees)
         result = np.eye(4)
         for j in self.chain:
             origin = j.find("origin")

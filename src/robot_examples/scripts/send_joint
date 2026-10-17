@@ -1,4 +1,0 @@
-#!/usr/bin/env python3
-from robot_examples.send_joint import main
-if __name__ == "__main__":
-    main()

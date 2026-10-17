@@ -2,6 +2,7 @@
 name = "robot-workspace"
 channels = ["https://prefix.dev/robostack-jazzy", "conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
+
 [dependencies]
 rsync = ">=3.2,<4"
 numpy = "==2.3.5"
@@ -23,19 +24,31 @@ ros-jazzy-tf2-msgs = "*"
 ros-jazzy-rosidl-default-generators = "*"
 ros-jazzy-ament-cmake-python = "*"
 ros-jazzy-foxglove-bridge = "*"
+
 [activation.env]
 ROS_DOMAIN_ID = "42"
 ROS_AUTOMATIC_DISCOVERY_RANGE = "LOCALHOST"
 PYTHONNOUSERSITE = "1"
+
 [activation]
 scripts = ["scripts/activate.sh"]
+
 [tasks]
 setup = "python scripts/setup.py"
 build = "python scripts/setup.py --build-only"
 doctor = "python scripts/doctor.py"
 setup-models = "python scripts/manage.py setup"
 fetch-act = "python scripts/fetch_act.py"
-robotctl = "ros2 run robot_examples robotctl"
+
+foxglove = "ros2 launch foxglove_bridge foxglove_bridge_launch.xml address:=127.0.0.1 port:=8766"
+server = "ros2 launch robot_server server.launch.py deployment:=src/robot_server/config/parol6.yaml backend:=mujoco mode:=stepped foxglove:=false"
+engage = "ros2 service call /teleop/engage std_srvs/srv/SetBool '{data: true}'"
+disengage = "ros2 service call /teleop/engage std_srvs/srv/SetBool '{data: false}'"
+# Uncomment the
+#teleop = "ros2 launch robot_teleop so101_parol6.launch.py start_server:=false foxglove:=false"
+teleop = "ros2 launch robot_teleop so101_parol6.launch.py start_server:=false foxglove:=false port:=/dev/cu.usbmodem5B910299271"
+teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py start_server:=true foxglove:=false port:=/dev/cu.usbmodem5B910299271"
+
 [pypi-dependencies]
 protobuf = "==7.36.2"
 mujoco = "==3.10.0"

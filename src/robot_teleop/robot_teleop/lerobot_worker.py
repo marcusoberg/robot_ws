@@ -48,8 +48,10 @@ def record(args):
     from lerobot.datasets.lerobot_dataset import LeRobotDataset
     config = yaml.safe_load(Path(args.config).read_text())
     settings = config["recording"]
+    binary_gripper = config.get("gripper", {"type": "binary"})["type"] == "binary"
+    robot_type = settings.get("robot_type", "parol6_sim")
     root = Path(args.output).expanduser().resolve() / (
-        "parol6-"+datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")+"-"+uuid.uuid4().hex[:6])
+        robot_type+"-"+datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")+"-"+uuid.uuid4().hex[:6])
     output, source = sys.stdout.buffer, sys.stdin.buffer
     sys.stdout = sys.stderr
     dataset = None
@@ -77,15 +79,15 @@ def record(args):
                     if previous and (f.runtime, f.timeline, f.time_ns) != (previous[0], previous[1], previous[2]+period):
                         raise ValueError("Reset or missing simulation interval: discard this episode")
                     state, action = np.asarray(f.state, dtype=np.float32), np.asarray(f.action, dtype=np.float32)
-                    if state.shape != (len(f.joints),) or action.shape != (len(f.joints)+1,) or not np.isfinite(state).all() or not np.isfinite(action).all():
-                        raise ValueError("Invalid PAROL6 state/action")
+                    if state.shape != (len(f.joints),) or action.shape != (len(f.joints)+int(binary_gripper),) or not np.isfinite(state).all() or not np.isfinite(action).all():
+                        raise ValueError("Invalid robot state/action")
                     frame = {"observation.state": state, "action": action,
                              "task": settings["task"],
                              "collection.observation_time_ns": np.array([f.time_ns], dtype=np.int64),
                              "collection.action_time_ns": np.array([f.action_time_ns], dtype=np.int64)}
                     features = {
                         "observation.state": {"dtype":"float32","shape":(len(f.joints),),"names":list(f.joints)},
-                        "action": {"dtype":"float32","shape":(len(f.joints)+1,),"names":[*f.joints,"gripper_open"]},
+                        "action": {"dtype":"float32","shape":(len(f.joints)+int(binary_gripper),),"names":[*f.joints,*(["gripper_open"] if binary_gripper else [])]},
                         "collection.observation_time_ns": {"dtype":"int64","shape":(1,),"names":["ns"]},
                         "collection.action_time_ns": {"dtype":"int64","shape":(1,),"names":["ns"]}}
                     if len(f.images) != len(settings["cameras"]):
@@ -101,12 +103,12 @@ def record(args):
                         dataset = LeRobotDataset.resume(repo_id="local/"+root.name, root=root, image_writer_threads=2)
                     if dataset is None:
                         dataset = LeRobotDataset.create(repo_id="local/"+root.name, fps=settings["fps"],
-                            root=root, robot_type="parol6_sim", features=features, use_videos=False,
+                            root=root, robot_type=robot_type, features=features, use_videos=False,
                             image_writer_threads=2, metadata_buffer_size=1)
                         (root/"teleoperation.json").write_text(json.dumps({
-                            "config": config, "joint_units":"radians", "gripper_action":"0 closed, 1 open",
+                            "config": config, "joint_units":"radians", "gripper_action":"0 closed, 1 open" if binary_gripper else "gripper joint radians",
                             "action_semantics":"native executed joint reference at t+1/fps; observation at t",
-                            "gripper_feedback":"not part of observation.state",
+                            "gripper_feedback":"not part of observation.state" if binary_gripper else "included in observation.state",
                             "capture":json.loads(f.metadata_json)}, indent=2))
                         manifest = signature
                     if signature != manifest:

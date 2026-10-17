@@ -2,7 +2,7 @@
 # All xyz values are metres; rpy values are radians, fixed-axis XYZ.
 mapping:
   base: base_link
-  tip: gripperframe
+  tip: handle_frame_link
   joint_sign: [1, 1, 1, 1, 1]
   joint_offset_degrees: [0, 0, 0, 0, 0]
   position_scale: 1.0
@@ -10,13 +10,17 @@ mapping:
   robot_from_leader:
     xyz: [0, 0, 0.2]
     rpy: [0, 0, 0]
-  # Local tool correction: post-multiply the handle pose by Ry(-90 degrees).
+  # Upstream physical handle axes; no extra local rotation.
   handle_to_tool:
     xyz: [0, 0, 0]
-    rpy: [0, -1.5707963267948966, 0]
+    rpy: [0, 0, 0]
+control_mode: cartesian
+gripper:
+  type: binary
 gripper_open_threshold: 50
 recording:
+  robot_type: parol6_sim
   fps: 20
   task: Pick up the green cube and place it in the brown container.
   cameras:
-    overview: overview/rgb
+    front: front/rgb
