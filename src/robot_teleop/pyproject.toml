@@ -1,0 +1,10 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+[project]
+name = "robot-teleop"
+version = "2.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["robot-description>=2,<3", "feetech-servo-sdk>=1.0,<2", "pyserial>=3.5,<4"]
+[tool.hatch.build.targets.wheel]
+packages = ["robot_teleop"]

@@ -1,176 +1,31 @@
-"""Build the new SDK and explicitly selected ROS packages from the workspace root."""
-
-from pathlib import Path
 import argparse
 import os
+from pathlib import Path
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
-ROS_PACKAGES = (
-    "robot_server",
-    "robot_teleop",
-    "model_client",
-    "robot_bringup",
-)
-
-
-def run(*command, **kw):
-    subprocess.run([str(c) for c in command], check=True, **kw)
-
-
-def positive_jobs(value):
-    jobs = int(value)
-    if jobs < 1:
-        raise argparse.ArgumentTypeError("--jobs must be a positive integer")
-    return jobs
-
+ROOT=Path(__file__).resolve().parents[1]
+def run(*args,env=None):
+    subprocess.run([str(x) for x in args],cwd=ROOT,env=env,check=True)
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--build-only", action="store_true")
-    parser.add_argument(
-        "--jobs",
-        type=positive_jobs,
-        default=2,
-        help="Maximum simultaneous compiler jobs (default: 2)",
-    )
-    args = parser.parse_args()
-    sdk = ROOT / "external/robot_runtime"
-    env = {
-        **os.environ,
-        "ROBOT_RUNTIME_NATIVE_ENV": str(ROOT / ".workspace/native-env"),
-        "ROBOT_RUNTIME_BUILD": str(ROOT / "build/runtime"),
-        "ROBOT_RUNTIME_INSTALL": str(ROOT / "install/runtime"),
-        "ROBOT_PYTHON": sys.executable,
-        "CMAKE_BUILD_PARALLEL_LEVEL": str(args.jobs),
-        # colcon otherwise gives each Makefile package all detected CPUs.
-        "MAKEFLAGS": f"-j{args.jobs}",
-    }
-    if not args.build_only:
-        run(sdk / "scripts/setup_native.sh", env=env)
-    run(sys.executable, "-m", "pip", "install", "--no-deps", "--no-build-isolation", "-e", ROOT / "inference")
-    nanobind_dir = subprocess.check_output(
-        [
-            str(ROOT / ".workspace/native-env/bin/python"),
-            "-I",
-            "-m",
-            "nanobind",
-            "--cmake_dir",
-        ],
-        text=True,
-        env=env,
-    ).strip()
-    run(
-        "cmake",
-        "-S",
-        sdk,
-        "-B",
-        ROOT / "build/runtime",
-        "-G",
-        "Ninja",
-        "-DCMAKE_BUILD_TYPE=Release",
-        f"-DCMAKE_INSTALL_PREFIX={ROOT / 'install/runtime'}",
-        f"-DPython_EXECUTABLE={sys.executable}",
-        f"-DPython3_EXECUTABLE={sys.executable}",
-        f"-DROBOT_RUNTIME_NATIVE_SDK={ROOT / '.workspace/native-env'}",
-        "-DROBOT_RUNTIME_BUILD_PYTHON=ON",
-        "-DROBOT_RUNTIME_BUILD_MUJOCO=ON",
-        f"-DROBOT_RUNTIME_BUILD_SERIAL={'ON' if sys.platform.startswith('linux') else 'OFF'}",
-        f"-Dnanobind_DIR={nanobind_dir}",
-        env=env,
-    )
-    run("cmake", "--build", ROOT / "build/runtime", "--parallel", str(args.jobs), env=env)
-    if sys.platform == "darwin":
-        # Recopy generated extensions before CMake applies their install RPATH.
-        # Otherwise a repeated install patches an already-patched up-to-date file.
-        for binary in (ROOT / "install/runtime/python/robot_runtime_native").glob(
-            "_native*.so"
-        ):
-            binary.unlink()
-    run("cmake", "--install", ROOT / "build/runtime", env=env)
-    # Compile/link the public installed C++ SDK facade; never run the consumer.
-    run(
-        "cmake",
-        "-S",
-        ROOT / "scripts/sdk_consumer",
-        "-B",
-        ROOT / "build/sdk-consumer",
-        "-G",
-        "Ninja",
-        f"-DCMAKE_PREFIX_PATH={ROOT / 'install/runtime'}",
-        env=env,
-    )
-    run("cmake", "--build", ROOT / "build/sdk-consumer", "--parallel", str(args.jobs), env=env)
-    # CMake installs the extension; pip installs its direct Python facade.
-    run(
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "--no-deps",
-        "--no-build-isolation",
-        "-e",
-        sdk / "python",
-        env=env,
-    )
-    # Import in a new process so Linux loader/ABI errors fail setup immediately.
-    # This registers binding types; it does not construct a Robot or render images.
-    binding_env = {**env, "PYTHONPATH": str(ROOT / "install/runtime/python")}
-    run(
-        sys.executable,
-        "-c",
-        "from robot_runtime_native import _native; "
-        "print('Native bindings:', _native.__file__)",
-        env=binding_env,
-    )
-    if sys.platform == "darwin":
-        for package in ("robot_server",):
-            for binary in (
-                ROOT / "install/ros/lib/python3.12/site-packages" / package
-            ).glob(f"{package}_s__*.so"):
-                binary.unlink()
-            binary = (
-                ROOT / "install/ros/lib" / f"lib{package}__rosidl_generator_py.dylib"
-            )
-            if binary.exists():
-                binary.unlink()
-    # Ignore stale root colcon_defaults.yaml; the complete build paths are explicit.
-    colcon_env = {
-        **env,
-        "COLCON_DEFAULTS_FILE": str(ROOT / "scripts/colcon_defaults.yaml"),
-    }
-    run(
-        "colcon",
-        "--log-base",
-        ROOT / "log/ros",
-        "build",
-        "--base-paths",
-        *(ROOT / "src" / name for name in ROS_PACKAGES),
-        "--build-base",
-        ROOT / "build/ros",
-        "--install-base",
-        ROOT / "install/ros",
-        "--merge-install",
-        "--executor",
-        "sequential",
-        "--cmake-args",
-        f"-DPython3_EXECUTABLE={sys.executable}",
-        f"-DPython_EXECUTABLE={sys.executable}",
-        cwd=ROOT,
-        env=colcon_env,
-    )
-    if sys.platform == "darwin":
-        prefix = Path(sys.prefix) / "lib"
-        for name in ("robot_server",):
-            for library in (ROOT / "install/ros/lib").glob(f"lib{name}*.dylib"):
-                link = prefix / library.name
-                if link.is_symlink():
-                    link.unlink()
-                if not link.exists():
-                    link.symlink_to(library)
-    print("Build complete. Start a fresh pixi shell from ws, then run pixi run doctor.")
-
-
-if __name__ == "__main__":
-    main()
+    p=argparse.ArgumentParser(description='Build the standalone runtime. ROS is opt-in; learning dependencies are separate.')
+    p.add_argument('--jobs',type=int,default=2);p.add_argument('--build-only',action='store_true');p.add_argument('--ros',action='store_true')
+    a=p.parse_args()
+    if a.jobs<1:p.error('--jobs must be positive')
+    prefix=ROOT/'install/standalone'
+    build=ROOT/'build'/f'standalone-{Path(sys.prefix).name}'
+    if not a.build_only:
+        run(sys.executable,'-m','pip','install','--no-build-isolation','-e','src/robot_description','-e','src/robot_data','-e','src/robot_server','-e','src/robot_teleop','-e','src/model_client','-e','external/robot_runtime/python')
+    run('cmake','-S','external/robot_runtime','-B',build,'-DCMAKE_BUILD_TYPE=Release',
+        '-DROBOT_RUNTIME_WITH_PYTHON=ON',f'-DPython_EXECUTABLE={sys.executable}',f'-DCMAKE_INSTALL_PREFIX={prefix}')
+    run('cmake','--build',build,'-j',a.jobs)
+    run('ctest','--test-dir',build,'--output-on-failure')
+    run('cmake','--install',build)
+    import sysconfig
+    (Path(sysconfig.get_path('purelib'))/'robot_runtime_native_v2.pth').write_text(str(prefix/'python')+'\n')
+    if a.ros:
+        run('colcon','build','--base-paths','src/robot_description','src/robot_data','src/robot_server','src/robot_teleop','src/model_client','src/robot_bringup','--build-base','build/ros-v2','--install-base','install/ros-v2',
+            '--merge-install','--symlink-install','--executor','sequential','--cmake-args',f'-DPython3_EXECUTABLE={sys.executable}')
+    print('Standalone SO101 runtime installed. Physical follower and PAROL6 execution are deferred.')
+if __name__=='__main__':main()

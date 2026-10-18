@@ -1,0 +1,14 @@
+{
+  "parol6": {
+    "assets": "deferred/parol6",
+    "execution": "deferred"
+  },
+  "so101_leader": {
+    "assets": "so101_leader",
+    "purpose": "leader model reference; acquisition uses calibrated encoder readings"
+  },
+  "so101_follower": {
+    "assets": "so101",
+    "execution": "MuJoCo position actuators only"
+  }
+}

@@ -1,57 +1,26 @@
-"""SO101 leader and explicitly stepped SO101 simulation, with optional collection."""
-import os
 from pathlib import Path
-from ament_index_python.packages import get_package_share_directory
+import shlex
+import sys
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    teleop = Path(get_package_share_directory("robot_teleop"))
-    server = Path(get_package_share_directory("robot_server"))
-    workspace = os.environ.get("PIXI_PROJECT_ROOT")
-    if not workspace:
-        raise RuntimeError("Launch from the workspace Pixi shell so the LeRobot environment and output paths are explicit")
-    root = Path(workspace)
-    args = [
-        DeclareLaunchArgument("port", description="SO101 leader serial port; no automatic device selection"),
-        DeclareLaunchArgument("leader_id", default_value="so101-leader"),
-        DeclareLaunchArgument("keyboard", default_value="auto", choices=["auto", "off"]),
-        DeclareLaunchArgument("calibration_dir", default_value=""),
-        DeclareLaunchArgument("config", default_value=str(teleop / "config/so101_so101.yaml")),
-        DeclareLaunchArgument("leader_urdf", default_value=str(teleop / "assets/so101_leader/so101_leader_new_calib.urdf")),
-        DeclareLaunchArgument("model_python", default_value=str(root / "environments/models/.venv/bin/python")),
-        DeclareLaunchArgument("output", default_value=str(root / "training/datasets")),
-        DeclareLaunchArgument("start_server", default_value="true"),
-        DeclareLaunchArgument("deployment", default_value=str(server / "config/so101_rgb3.yaml")),
-        DeclareLaunchArgument("foxglove", default_value="true"),
-    ]
-    return LaunchDescription(args + [
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(str(server / "launch/server.launch.py")),
-            condition=IfCondition(LaunchConfiguration("start_server")),
-            launch_arguments={
-                "deployment": LaunchConfiguration("deployment"),
-                "backend": "mujoco",
-                "mode": "stepped",
-                "foxglove": LaunchConfiguration("foxglove")
-            }.items()),
-        Node(
-            package="robot_teleop",
-            executable="so101",
-            output="screen",
-            arguments=[
-                "--keyboard", LaunchConfiguration("keyboard"),
-                "--port", LaunchConfiguration("port"),
-                "--leader-id", LaunchConfiguration("leader_id"),
-                "--calibration-dir", LaunchConfiguration("calibration_dir"),
-                "--config", LaunchConfiguration("config"),
-                "--urdf", LaunchConfiguration("leader_urdf"),
-                "--python", LaunchConfiguration("model_python"),
-                "--output", LaunchConfiguration("output")
-            ])
-    ])
+    return LaunchDescription([DeclareLaunchArgument('port', description='Explicit serial port for the SO101 leader'), DeclareLaunchArgument('calibration',
+                                                                                                                                            default_value=str(
+                                                                                                                                            Path.home() / '.cache/huggingface/lerobot/calibration/teleoperators/so_leader/so101-leader.json')),
+        DeclareLaunchArgument('keyboard', default_value='auto'), DeclareLaunchArgument('start_server', default_value='false'),
+        DeclareLaunchArgument('foxglove', default_value='false'), DeclareLaunchArgument('foxglove_port', default_value='8766'),
+        DeclareLaunchArgument('output', default_value='training/datasets'),
+        IncludeLaunchDescription(PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('robot_server'), 'launch', 'server.launch.py'])),
+            condition=IfCondition(LaunchConfiguration('start_server')),
+            launch_arguments={'foxglove': LaunchConfiguration('foxglove'), 'foxglove_port': LaunchConfiguration('foxglove_port'),
+                              'recordings': LaunchConfiguration('output')}.items()),
+        Node(package='robot_teleop', executable='so101', prefix=[shlex.quote(sys.executable)], output='screen',
+             arguments=['--port', LaunchConfiguration('port'), '--calibration', LaunchConfiguration('calibration'), '--keyboard',
+                        LaunchConfiguration('keyboard')]), ])

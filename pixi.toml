@@ -1,66 +1,85 @@
 [workspace]
 name = "robot-workspace"
-channels = ["https://prefix.dev/robostack-jazzy", "conda-forge"]
+channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
 [dependencies]
-rsync = ">=3.2,<4"
-numpy = "==2.3.5"
 python = "3.12.*"
 pip = "*"
 uv = "0.13.*"
-scipy = ">=1.15,<2"
 cmake = ">=3.22,<4"
 ninja = "*"
-yaml-cpp = "0.8.*"
 compilers = "*"
-colcon-common-extensions = "*"
-ros-jazzy-ros-base = "*"
-ros-jazzy-rclpy = "*"
-ros-jazzy-sensor-msgs = "*"
-ros-jazzy-geometry-msgs = "*"
-ros-jazzy-trajectory-msgs = "*"
-ros-jazzy-tf2-msgs = "*"
-ros-jazzy-rosidl-default-generators = "*"
-ros-jazzy-ament-cmake-python = "*"
-ros-jazzy-foxglove-bridge = "*"
 
-[activation.env]
-ROS_DOMAIN_ID = "42"
-ROS_AUTOMATIC_DISCOVERY_RANGE = "LOCALHOST"
-PYTHONNOUSERSITE = "1"
+[pypi-dependencies]
+numpy = ">=2,<3"
+mujoco = "==3.10.0"
+nanobind = "==3.1.0"
+hatchling = ">=1.27,<2"
+editables = ">=0.5,<1"
+pytest = ">=8,<9"
+robot-description = { path = "src/robot_description", editable = true }
+robot-data = { path = "src/robot_data", editable = true }
+robot-server-core = { path = "src/robot_server", editable = true }
+robot-teleop = { path = "src/robot_teleop", editable = true }
+model-client = { path = "src/model_client", editable = true }
+robot-runtime-native = { path = "external/robot_runtime/python", editable = true }
 
 [activation]
 scripts = ["scripts/activate.sh"]
+
+[activation.env]
+PYTHONNOUSERSITE = "1"
 
 [tasks]
 setup = "python scripts/setup.py"
 build = "python scripts/setup.py --build-only"
 doctor = "python scripts/doctor.py"
+test = "python -m pytest tests -q"
+smoke-record = "python -m robot_server_core.cli"
 setup-models = "python scripts/manage.py setup"
-fetch-act = "python scripts/fetch_act.py"
+dataset = "python scripts/manage.py dataset"
+train = "python scripts/manage.py train"
+export-model = "python scripts/manage.py export"
+serve-model = "python scripts/manage.py serve"
+evaluate = "python scripts/manage.py evaluate"
 
+[feature.ros]
+channels = ["https://prefix.dev/robostack-jazzy", "conda-forge"]
+
+[feature.ros.dependencies]
+pytest = ">=8,<9"
+colcon-common-extensions = "*"
+ros-jazzy-ros-base = "*"
+ros-jazzy-rclpy = "*"
+ros-jazzy-sensor-msgs = "*"
+ros-jazzy-rosgraph-msgs = "*"
+ros-jazzy-rosidl-default-generators = "*"
+ros-jazzy-ament-cmake-python = "*"
+ros-jazzy-robot-state-publisher = "*"
+ros-jazzy-foxglove-bridge = "*"
+
+[feature.ros.activation]
+scripts = ["scripts/activate.sh", "scripts/activate_ros.sh"]
+
+[feature.ros.tasks]
+#teleop-so101 = "python scripts/teleop_so101.py"
+teleop = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271"
+server = "ros2 launch robot_server server.launch.py foxglove:=false"
+engage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: true}'"
+disengage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: false}'"
+record = "python -m robot_server_node.control record"
+save = "python -m robot_server_node.control save"
+discard = "python -m robot_server_node.control discard"
+reset = "python -m robot_server_node.control reset"
+pause = "python -m robot_server_node.control pause"
+enable = "python -m robot_server_node.control enable"
+disable = "python -m robot_server_node.control disable"
+test-ros = "python -m pytest tests/test_ros_adapter.py -q"
+setup-ros = "python scripts/setup.py --ros"
+server-ros = "ros2 launch robot_server server.launch.py foxglove:=false"
 foxglove = "ros2 launch foxglove_bridge foxglove_bridge_launch.xml address:=127.0.0.1 port:=8766"
-server = "ros2 launch robot_server server.launch.py deployment:=src/robot_server/config/parol6.yaml backend:=mujoco mode:=stepped foxglove:=false"
-engage = "ros2 service call /teleop/engage std_srvs/srv/SetBool '{data: true}'"
-disengage = "ros2 service call /teleop/engage std_srvs/srv/SetBool '{data: false}'"
-# Uncomment the
-#teleop = "ros2 launch robot_teleop so101_parol6.launch.py start_server:=false foxglove:=false"
-teleop = "ros2 launch robot_teleop so101_parol6.launch.py start_server:=false foxglove:=false port:=/dev/cu.usbmodem5B910299271"
-teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py start_server:=true foxglove:=false port:=/dev/cu.usbmodem5B910299271"
 
-[pypi-dependencies]
-protobuf = "==7.36.2"
-mujoco = "==3.10.0"
-nanobind = "==3.1.0"
-scikit-build-core = ">=0.11,<2"
-hatchling = ">=1.27,<2"
-editables = ">=0.5,<1"
-setuptools = ">=77"
-websockets = ">=14,<17"
-pillow = ">=11,<13"
-pyyaml = ">=6,<7"
-psutil = ">=7,<8"
-
-[target.linux-64.dependencies]
-make = "4.*"
+[environments]
+default = { features = [] }
+ros = { features = ["ros"] }

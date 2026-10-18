@@ -1,0 +1,10 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+[project]
+name = "robot-description"
+version = "2.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy>=2,<3"]
+[tool.hatch.build.targets.wheel]
+packages = ["robot_description"]

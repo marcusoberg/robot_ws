@@ -16,7 +16,6 @@
 !/colcon_defaults.yaml
 !/scripts/
 !/docs/
-!/inference/
 !/training/
 !/environments/
 /environments/*
@@ -36,6 +35,8 @@
 !/src/robot_teleop/
 !/src/robot_examples/
 !/src/robot_bringup/
+!/src/robot_description/
+!/src/robot_data/
 
 # Generated files and local state, including within maintained directories.
 **/.git/
@@ -96,3 +97,5 @@ id_ed25519*
 **/credentials*
 **/secrets.*
 **/attachment.json
+
+!/tests/

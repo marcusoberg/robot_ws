@@ -1,0 +1,12 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+[project]
+name = "model-client"
+version = "2.0.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["robot-description>=2,<3", "numpy>=2,<3", "protobuf==7.36.2", "websockets>=14,<17"]
+[tool.hatch.build.targets.wheel]
+packages = ["model_client", "robot_inference"]
+[project.scripts]
+robot-model-server = "robot_inference.server:main"

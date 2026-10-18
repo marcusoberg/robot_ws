@@ -13,7 +13,7 @@ while [ "$#" -gt 0 ]; do
             fi
             build_jobs="$2"; shift 2 ;;
         --help|-h)
-            printf 'Usage: ./scripts/setup.sh [--local-pixi] [--jobs N]\nInstall the project; --local-pixi keeps Pixi in .tools/.\nDefault: two compiler jobs, one ROS package at a time.\n'
+            printf 'Usage: ./scripts/setup.sh [--local-pixi] [--jobs N]\nInstall the project; --local-pixi keeps Pixi in .tools/.\nDefault: standalone runtime only; ROS and learning use separate environments.\n'
             exit 0 ;;
         *) printf 'Unknown option: %s\nUse ./scripts/setup.sh --help\n' "$1" >&2; exit 2 ;;
     esac

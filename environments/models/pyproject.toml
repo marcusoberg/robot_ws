@@ -1,11 +1,15 @@
 [project]
 name = "robot-model-environment"
-version = "0.1.0"
+version = "2.0.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["robot-inference", "lerobot[training,smolvla,feetech]==0.6.0", "torch==2.10.0", "torchvision==0.25.0", "torchcodec==0.9.1", "scipy>=1.15,<2"]
-
+dependencies = ["robot-description", "robot-data", "model-client", "lerobot[training]==0.6.0", "torch==2.10.0", "torchvision==0.25.0", "torchcodec==0.9.1"]
+[project.optional-dependencies]
+simulation = ["robot-server-core", "robot-runtime-native"]
 [tool.uv.sources]
-robot-inference = { path = "../../inference", editable = true }
-
+robot-description = { path = "../../src/robot_description", editable = true }
+robot-data = { path = "../../src/robot_data", editable = true }
+robot-server-core = { path = "../../src/robot_server", editable = true }
+model-client = { path = "../../src/model_client", editable = true }
+robot-runtime-native = { path = "../../external/robot_runtime/python", editable = true }
 [tool.uv]
 environments = ["sys_platform == 'darwin' and platform_machine == 'arm64'", "sys_platform == 'linux' and platform_machine == 'x86_64'"]

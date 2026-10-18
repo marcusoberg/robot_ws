@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.22)
+project(robot_description)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+ament_python_install_package(robot_description)
+install(DIRECTORY robot_description/assets/ DESTINATION share/${PROJECT_NAME})
+ament_package()

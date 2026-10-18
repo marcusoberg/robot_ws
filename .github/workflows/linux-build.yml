@@ -1,36 +1,33 @@
-name: Linux build
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/linux-build.yml'
-      - 'pixi.toml'
-      - 'pixi.lock'
-      - 'scripts/**'
-      - 'external/**'
-      - 'inference/**'
-      - 'training/**'
-      - 'src/**'
-  pull_request:
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: linux-build-${{ github.ref }}
-  cancel-in-progress: true
-
+name: Standalone and optional ROS
+on: [push, pull_request]
 jobs:
-  build:
+  core:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/checkout@v4
+      - run: cmake -S external/robot_runtime -B build/core -DBUILD_TESTING=ON && cmake --build build/core && ctest --test-dir build/core --output-on-failure
+  standalone:
+    needs: core
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.9.4
         with:
-          persist-credentials: false
-      - name: Build SDK, Python bindings, installed C++ consumer and ROS packages
-        run: ./scripts/setup.sh --local-pixi --jobs 2
-      - name: Verify installed imports and ROS type support
-        run: .tools/pixi run --locked doctor
+          pixi-version: v0.81.0
+          cache: true
+      - run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0
+      - run: pixi run setup
+      - run: xvfb-run -a pixi run test
+      - run: pixi run doctor
+  ros:
+    needs: standalone
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          pixi-version: v0.81.0
+          environments: ros
+      - run: pixi run -e ros setup-ros
+      - run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0
+      - run: xvfb-run -a pixi run -e ros test-ros

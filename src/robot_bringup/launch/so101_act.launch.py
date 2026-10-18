@@ -1,43 +1,19 @@
-"""Composition defaults; every launch choice remains overridable by the operator."""
-
+import shlex
+import sys
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-
 def generate_launch_description():
-    return LaunchDescription(
-        [
-            DeclareLaunchArgument(
-                "config",
-                default_value=PathJoinSubstitution(
-                    [FindPackageShare("robot_server"), "config", "so101_rgb3.yaml"]
-                ),
-                description="Robot/backend/camera configuration owned by Robot Server",
-            ),
-            DeclareLaunchArgument(
-                "model_config",
-                default_value=PathJoinSubstitution(
-                    [FindPackageShare("model_client"), "config", "act.yaml"]
-                ),
-                description="Input features for the optional Model Client",
-            ),
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    PathJoinSubstitution(
-                        [
-                            FindPackageShare("robot_bringup"),
-                            "launch",
-                            "system.launch.py",
-                        ]
-                    )
-                ),
-                launch_arguments={
-                    "config": LaunchConfiguration("config"),
-                    "model_config": LaunchConfiguration("model_config"),
-                }.items(),
-            ),
-        ]
-    )
+    return LaunchDescription([
+        DeclareLaunchArgument('bundle'),DeclareLaunchArgument('url',default_value='ws://127.0.0.1:8000'),
+        DeclareLaunchArgument('foxglove',default_value='false'),
+        IncludeLaunchDescription(PythonLaunchDescriptionSource(PathJoinSubstitution([
+            FindPackageShare('robot_server'),'launch','server.launch.py'])),
+            launch_arguments={'foxglove':LaunchConfiguration('foxglove')}.items()),
+        Node(package='model_client',executable='model_client',prefix=[shlex.quote(sys.executable)],output='screen',
+             arguments=['--bundle',LaunchConfiguration('bundle'),'--url',LaunchConfiguration('url')]),
+    ])

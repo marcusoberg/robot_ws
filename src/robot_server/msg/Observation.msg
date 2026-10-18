@@ -1,6 +1,12 @@
-# Original SDK observation; record_json contains typed native robot.v2 data.
-string runtime_instance
-uint64 timeline_generation
-uint64 observation_sequence
-int64 execution_time_ns
-string record_json
+uint64 episode
+uint64 snapshot
+int64 acquisition_time_ns
+uint64 host_acquired_ns
+string instance
+string action_spec_id
+string[] joints
+float64[] measured_positions
+float64[] measured_velocities
+string[] camera_names
+sensor_msgs/Image[] images
+string camera_metadata_json

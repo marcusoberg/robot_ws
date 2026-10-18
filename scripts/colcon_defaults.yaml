@@ -1,1 +1,6 @@
-{}
+build:
+  base-paths: [src/robot_description, src/robot_data, src/robot_server, src/robot_teleop, src/model_client, src/robot_bringup]
+  build-base: build/ros-v2
+  install-base: install/ros-v2
+  merge-install: true
+  symlink-install: true

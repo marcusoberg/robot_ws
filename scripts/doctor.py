@@ -1,91 +1,10 @@
-"""Static installation check: no robot, recorder or model processes are started."""
-
-from pathlib import Path
-import importlib
+import importlib.util
 import json
-import sys
-from ament_index_python.packages import get_package_share_directory
-from rosidl_generator_py import import_type_support
-
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def main():
-    errors = []
-    modules = {}
-    packages = {}
-    for name in (
-        "robot_runtime",
-        "robot_runtime_native",
-        "robot_runtime_native._native",
-        "robot_inference",
-        "robot_inference.codec",
-        "robot_server_node",
-        "robot_teleop",
-        "model_client",
-        "robot_server_node.node",
-        "robot_server_client",
-        "robot_server_client.producer",
-        "robot_server_client.activation",
-        "robot_teleop.so101",
-        "robot_teleop.space_key",
-        "robot_teleop.keyboard",
-        "model_client.client",
-    ):
-        try:
-            module = importlib.import_module(name)
-            path = Path(module.__file__).resolve()
-            modules[name] = str(path)
-            if not path.is_relative_to(ROOT) or any(
-                p in path.parts
-                for p in (
-                    "archive",
-                    "parol6_demo",
-                    "robot-experiments",
-                    "policy_runner",
-                    "robot-data",
-                    "robot-ros",
-                )
-            ):
-                errors.append(f"{name} resolves outside the fresh layout: {path}")
-        except Exception as error:
-            errors.append(f"{name}: {error}")
-    for name in (
-        "robot_server",
-        "robot_teleop",
-        "model_client",
-        "robot_bringup",
-    ):
-        try:
-            path = Path(get_package_share_directory(name)).resolve()
-            packages[name] = str(path)
-            if not path.is_relative_to(ROOT / "install/ros"):
-                errors.append(
-                    f"{name} package resources resolve outside fresh ROS installation: {path}"
-                )
-        except Exception as error:
-            errors.append(f"{name}: {error}")
-    for name in ("robot_server",):
-        try:
-            import_type_support(name)
-        except Exception as error:
-            errors.append(f"{name} typesupport: {error}")
-    try:
-        from robot_server_node.sdk_compatibility import validate_sdk_usage
-
-        errors.extend(validate_sdk_usage())
-    except Exception as error:
-        errors.append(f"SDK facade compatibility: {error}")
-    report = {
-        "python": sys.executable,
-        "modules": modules,
-        "ros_packages": packages,
-        "errors": errors,
-        "operational_smoke_run": False,
-    }
-    print(json.dumps(report, indent=2))
-    return bool(errors)
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+from robot_description.spec import so101
+from robot_runtime_native._native import Simulation
+p=so101();sim=Simulation(p.native_spec(),str(p.scene),p.initial)
+sim.enable();session=sim.activate('doctor');snap=sim.step(p.initial,session,1)
+assert snap.time==50_000_000 and len(snap.trace)==5 and snap.status.mode=='Running'
+sim.disable()
+print(json.dumps({'runtime':'v2','backend':p.backend,'action_spec':p.spec.identity,'ROS_installed':importlib.util.find_spec('rclpy') is not None,
+                  'supported':['SO101 leader to MuJoCo','offline ACT','local/remote inference'],'deferred':['PAROL6','physical follower','Cartesian control']},indent=2))

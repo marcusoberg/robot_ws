@@ -1,20 +1,14 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0"?>
 <package format="3">
-  <name>robot_teleop</name>
-  <version>0.1.0</version>
-  <description>robot teleop for the fresh robot workspace</description>
-  <maintainer email="robotics@example.invalid">Robot workspace maintainers</maintainer>
-  <license>MIT</license>
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>robot_server</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>std_msgs</exec_depend>
-  <exec_depend>ament_index_python</exec_depend>
-  <exec_depend>launch_ros</exec_depend>
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
+<name>robot_teleop</name><version>2.0.0</version>
+<description>Calibrated leader acquisition and ROS teleoperation source.</description>
+<maintainer email="team@example.invalid">Robot team</maintainer><license>Apache-2.0</license>
+<buildtool_depend>ament_cmake</buildtool_depend><buildtool_depend>ament_cmake_python</buildtool_depend>
+<exec_depend>robot_description</exec_depend>
+<exec_depend>robot_server</exec_depend>
+<exec_depend>rclpy</exec_depend>
+<exec_depend>std_msgs</exec_depend>
+<exec_depend>sensor_msgs</exec_depend>
+<exec_depend>launch_ros</exec_depend>
+<export><build_type>ament_cmake</build_type></export>
 </package>

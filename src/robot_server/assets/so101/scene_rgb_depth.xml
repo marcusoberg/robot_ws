@@ -1,6 +1,0 @@
-<mujoco model="simple_pick_rgb_depth">
-  <include file="scene.xml"/>
-  <visual>
-    <global offheight="512" offwidth="640"/>
-  </visual>
-</mujoco>

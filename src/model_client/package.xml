@@ -1,20 +1,12 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0"?>
 <package format="3">
-  <name>model_client</name>
-  <version>0.1.0</version>
-  <description>model client for the fresh robot workspace</description>
-  <maintainer email="robotics@example.invalid">Robot workspace maintainers</maintainer>
-  <license>MIT</license>
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>robot_server</exec_depend>
-  <exec_depend>trajectory_msgs</exec_depend>
-  <exec_depend>builtin_interfaces</exec_depend>
-  <exec_depend>python3-yaml</exec_depend>
-  <exec_depend>launch_ros</exec_depend>
-  <exec_depend>std_srvs</exec_depend>
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
+<name>model_client</name><version>2.0.0</version>
+<description>Policy action playback and local or remote inference.</description>
+<maintainer email="team@example.invalid">Robot team</maintainer><license>Apache-2.0</license>
+<buildtool_depend>ament_cmake</buildtool_depend><buildtool_depend>ament_cmake_python</buildtool_depend>
+<exec_depend>robot_description</exec_depend>
+<exec_depend>robot_server</exec_depend>
+<exec_depend>rclpy</exec_depend>
+<exec_depend>sensor_msgs</exec_depend>
+<export><build_type>ament_cmake</build_type></export>
 </package>
