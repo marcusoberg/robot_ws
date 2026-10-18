@@ -53,6 +53,10 @@ class LeaderMapping:
             q.append(lo if x == a else hi if x == b else lo + (x-a)/(b-a)*(hi-lo))
         return self.spec.validate(q)
 
+class LeaderFeedbackTimeout(TimeoutError):
+    pass
+
+
 class SerialLeader:
     def __init__(self, port, calibration_path, spec, *, map_positions=True):
         from scservo_sdk import PortHandler, PacketHandler
@@ -71,15 +75,14 @@ class SerialLeader:
             for name in spec.joints:
                 c = self.calibration[name]
                 offset, result, error = self.bus.read2ByteTxRx(self.port, c["id"], 31)
+                if result or (error & ~0x01):
+                    raise RuntimeError(f"Leader homing offset read failed: {name} ({result}, {error})")
                 signed_offset = -(offset & 2047) if offset & 2048 else offset
-                if result or error or signed_offset != c["homing_offset"]:
-                    raise ValueError(f"Leader motor calibration differs from file: {name}; calibrate before connecting")
-                for key,address in (("range_min",9),("range_max",11)):
-                    value,result,error=self.bus.read2ByteTxRx(self.port,c["id"],address)
-                    if result or error or value!=c[key]:
-                        raise ValueError(f"Leader motor {key} differs from calibration: {name}")
+                if signed_offset != c["homing_offset"]:
+                    raise ValueError(f"Leader homing offset differs from calibration: {name}; "
+                                     f"motor={signed_offset}, file={c['homing_offset']}")
                 result, error = self.bus.write1ByteTxRx(self.port, c["id"], 40, 0)
-                if result or error:
+                if result or (error & ~0x01):
                     raise RuntimeError(f"Cannot disable leader torque: {name}")
         except BaseException:
             self.close(); raise
@@ -91,10 +94,13 @@ class SerialLeader:
         return self.mapping.map(raw), acquired
 
     def read_raw(self):
+        from scservo_sdk import COMM_RX_TIMEOUT
         acquired = time.monotonic_ns()
         raw = {}
         for name in self.spec.joints:
             value, result, error = self.bus.read2ByteTxRx(self.port, self.calibration[name]["id"], 56)
+            if result == COMM_RX_TIMEOUT:
+                raise LeaderFeedbackTimeout(f"Leader feedback timed out: {name} (COMM_RX_TIMEOUT, {result})")
             if result or (error & ~0x01):
                 raise RuntimeError(f"Leader feedback failed: {name} ({result}, {error})")
             raw[name] = value

@@ -3,7 +3,7 @@ version = 1
 [leader]
 urdf = "package://robot_description/so101_leader/so101_leader_new_calib.urdf"
 base = "base_link"
-tip = "gripper_frame_link"
+tip = "gripper_link"
 joints = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
 reference = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 ticks_per_revolution = 4096
@@ -13,7 +13,7 @@ zero_radians = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 [follower]
 urdf = "package://robot_description/deferred/parol6/parol6.urdf"
 base = "base_link"
-tip = "tool_tcp"
+tip = "link_6"
 joints = ["L1", "L2", "L3", "L4", "L5", "L6", "gripper_slide"]
 reference = [0.0, -1.3, 3.4, 0.0, 0.2, 3.141592653589793, 0.0035]
 

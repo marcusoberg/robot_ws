@@ -17,9 +17,10 @@ class Adapter(Node):
         super().__init__('robot_server',start_parameter_services=False)
         recordings=self.declare_parameter('recordings','recordings').value
         robot=self.declare_parameter('robot','so101').value
+        gripper=self.declare_parameter('gripper','pneumatic').value
         self.paced=self.declare_parameter('paced',False).value
         self.owns_application=app is None
-        self.app=Application(recordings,profile=load_profile(robot)) if self.owns_application else app
+        self.app=Application(recordings,profile=load_profile(robot,gripper=gripper)) if self.owns_application else app
         if not self.owns_application and self.paced:
             raise ValueError('An attached adapter cannot own the application clock')
         self.spec=self.app.env.profile.spec

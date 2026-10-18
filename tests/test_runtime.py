@@ -148,11 +148,12 @@ def test_backend_rejects_nonposition_actuator(tmp_path):
     <actuator><motor joint="j0" ctrlrange="-1 1"/><position joint="j1" ctrlrange="-1 1"/><position joint="j2" ctrlrange="-1 1"/></actuator></mujoco>''')
     with pytest.raises(ValueError,match='position actuator'):Simulation(spec,str(path),[0.]*3)
 
-def test_serial_leader_checks_device_calibration_without_clamping(calibration,tmp_path,monkeypatch):
+def test_serial_leader_uses_file_ranges_and_checks_homing_offset(calibration,tmp_path,monkeypatch):
     import serial
-    from robot_teleop.leader import SerialLeader
+    from robot_teleop.leader import LeaderFeedbackTimeout, SerialLeader
     class SerialWire:
-        position=2000;minimum=100;error=0
+        position=2000;minimum=101;maximum=3899;offset=2048+123;error=1
+        drop_motor=None
         connections=[];writes=[]
         def __init__(self,**settings):
             assert settings['port']=='/explicit-port' and settings['baudrate']==1_000_000
@@ -168,7 +169,8 @@ def test_serial_leader_checks_device_calibration_without_clamping(calibration,tm
             motor,instruction,address=packet[2],packet[4],packet[5]
             if instruction==2:
                 assert packet[6]==2
-                value={31:2048+123,9:self.minimum,11:3900,56:self.position}[address]
+                if address==56 and motor==self.drop_motor:return len(packet)
+                value={31:self.offset,9:self.minimum,11:self.maximum,56:self.position}[address]
                 payload=[value&255,value>>8]
             else:
                 assert instruction==3 and address==40 and packet[6]==0
@@ -196,10 +198,18 @@ def test_serial_leader_checks_device_calibration_without_clamping(calibration,tm
         SerialWire.error=1
         raw,stamp=raw_leader.read_raw()
         assert raw==dict.fromkeys(so101().spec.joints,2000) and stamp>0
+        SerialWire.drop_motor=4
+        with pytest.raises(LeaderFeedbackTimeout,match='wrist_flex.*COMM_RX_TIMEOUT, -6'):
+            raw_leader.read_raw()
+        SerialWire.drop_motor=None;SerialWire.position=2100
+        raw,stamp=raw_leader.read_raw()
+        assert raw==dict.fromkeys(so101().spec.joints,2100)
         with pytest.raises(RuntimeError,match='raw acquisition'):raw_leader.read()
         SerialWire.error=0
     finally:raw_leader.close()
-    SerialWire.minimum=101
-    with pytest.raises(ValueError,match='differs from calibration'):SerialLeader('/explicit-port',path,so101().spec)
+    SerialWire.error=4
+    with pytest.raises(RuntimeError,match='homing offset read failed'):SerialLeader('/explicit-port',path,so101().spec)
+    SerialWire.error=0;SerialWire.offset=2048+124
+    with pytest.raises(ValueError,match='motor=-124, file=-123'):SerialLeader('/explicit-port',path,so101().spec)
     assert all(port.closed for port in SerialWire.connections)
     assert json.loads(path.read_text())==calibration

@@ -1,0 +1,39 @@
+{
+  "source": "https://github.com/PCrnjak/PAROL6-python-API",
+  "revision": "a005188813521a18b6150739597a92c0a0224af7",
+  "license": "GPL-3.0; see MSG_AI_100_LICENSE",
+  "meshes": {
+    "msg_ai_100_body.stl": "790aedf7d16d3ff38d69a7cda5d8b596fedb0472e697a3ea0cd701ed7726c3c8",
+    "msg_ai_100_left_jaw.stl": "f7426ce9c4acb80ca174c9ec8dafc82425f4b6a4a933bdcb3fa1f52502f2cbbc",
+    "msg_ai_100_right_jaw.stl": "954736eac995998b7826ca472c84532b72f65f0917ab75eca9776590a0a91b71"
+  },
+  "upstream_configuration": "parol6/tools.py: _MSG_100_JAW_MOTION, _MSG_MOUNT_ORIGIN, MSG/100mm ToolVariant",
+  "flange_to_mesh_translation_m": [
+    0,
+    0,
+    -0.0065
+  ],
+  "tcp_translation_m": [
+    -0.029,
+    0,
+    -0.1095
+  ],
+  "jaw_travel_m": 0.0267,
+  "jaw_semantics": "One independent position per jaw: 0 closed, 0.0267 open. The left jaw mimics the right jaw on the opposite axis. CAD meshes are exported open.",
+  "camera": {
+    "mount_centre_in_mesh_m": [
+      0.0615338,
+      -5e-07,
+      -0.03299625
+    ],
+    "optical_axis_in_flange": [
+      -0.766044443118978,
+      0,
+      -0.6427876096865394
+    ],
+    "placement": "Centre of four CAD mounting holes, normal to the mounting plate; assumed 4 mm lens protrusion. Approximate optical centre, not a measured camera calibration.",
+    "vertical_fov_degrees": 60.4,
+    "optical_axis_roll_degrees": 180
+  },
+  "simulation": "Body mass 0.25 kg and each jaw mass 0.03 kg are estimates. Coarse collision envelopes and position-actuator gains model the attachment, not its physical motor/compliance."
+}

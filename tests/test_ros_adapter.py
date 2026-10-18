@@ -327,6 +327,7 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
     app=Application(tmp_path,cameras=False);server=Adapter(app=app)
     class Leader:
         failed=False
+        missing=False
         closed=False
         def __init__(self,port,calibration,spec,*,map_positions=True):
             assert port=='/explicit-test-port'
@@ -334,9 +335,11 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
             self.calibration = {name: dict(id=i+1, drive_mode=0, homing_offset=0, range_min=100, range_max=3900)
                                 for i, name in enumerate(spec.joints)}
         def read(self):
+            if self.missing:raise module.LeaderFeedbackTimeout('wrist_flex: COMM_RX_TIMEOUT')
             if self.failed:raise ValueError('sample outside calibrated domain')
             return so101().spec.validate(so101().initial),time.monotonic_ns()
         def read_raw(self):
+            if self.missing:raise module.LeaderFeedbackTimeout('wrist_flex: COMM_RX_TIMEOUT')
             if self.failed:raise ValueError('sample outside calibrated domain')
             raw = dict.fromkeys(self.calibration,2000)
             raw['gripper'] = self.calibration['gripper']['range_min']
@@ -354,6 +357,26 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
         until(lambda:leader.status is not None and leader.commands.get_subscription_count())
         leader.engage(Bool(data=True))
         until(lambda:server.status().delivered_sequence>=2)
+        sequence=leader.sent_sequence
+        leader.leader.missing=True
+        leader.sample()
+        assert leader.sent_sequence==sequence
+        leader.leader.missing=False
+        leader.sample()
+        assert leader.sent_sequence==sequence+1
+        session=leader.session
+        leader.leader.missing=True
+        until(lambda:leader.feedback_lost_session==session)
+        sequence=leader.sent_sequence
+        leader.leader.missing=False
+        leader.sample()
+        assert leader.sent_sequence==sequence
+        until(lambda:not server.status().session and not leader.session)
+        assert server.status().mode=='Ready' and not leader.leader.closed
+        leader.sample()
+        assert not leader.session
+        leader.engage(Bool(data=True))
+        until(lambda:server.status().session not in (0,session) and server.status().delivered_sequence>=2)
         leader.leader.failed=True
         with pytest.raises(ValueError, match='sample outside calibrated domain'):
             until(lambda:not server.status().session)

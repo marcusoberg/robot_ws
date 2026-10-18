@@ -95,16 +95,22 @@ def so101():
     return Profile(spec, assets / "scene.xml", description, (0., -.3, .6, 1.2, 0., -.1))
 
 
-def parol6():
+def parol6(gripper="pneumatic"):
     assets = Path(__file__).parent / "assets" / "deferred" / "parol6"
-    description = assets / "parol6.urdf"
+    description_name, scene_name, initial_gripper = {
+        "pneumatic": ("parol6.urdf", "scene.xml", .0035),
+        "msg_ai_100": ("parol6_msg_ai_100.urdf", "scene_msg_ai_100.xml", 0.),
+    }[gripper]
+    description = assets / description_name
     joints = ("L1", "L2", "L3", "L4", "L5", "L6", "gripper_slide")
     defined = {j.attrib["name"]: j for j in ET.parse(description).getroot().findall("joint")}
     limits = [defined[name].find("limit").attrib for name in joints]
     spec = ActionSpec(joints, ("rad",)*6 + ("m",), tuple(float(x["lower"]) for x in limits),
                       tuple(float(x["upper"]) for x in limits))
-    return Profile(spec, assets / "scene.xml", description, (0., -1.3, 3.4, 0., .2, np.pi, .0035), cube_half_size=.007)
+    return Profile(spec, assets / scene_name, description, (0., -1.3, 3.4, 0., .2, np.pi, initial_gripper), cube_half_size=.007)
 
 
-def load_profile(robot="so101"):
-    return {"so101": so101, "parol6": parol6}[robot]()
+def load_profile(robot="so101", *, gripper="pneumatic"):
+    if robot == "parol6":
+        return parol6(gripper)
+    return {"so101": so101}[robot]()

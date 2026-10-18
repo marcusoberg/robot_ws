@@ -16,7 +16,8 @@ from robot_description.spec import load_profile
 
 
 def nodes(context):
-    profile = load_profile(LaunchConfiguration('robot').perform(context))
+    profile = load_profile(LaunchConfiguration('robot').perform(context),
+                           gripper=LaunchConfiguration('gripper').perform(context))
     assets = Path(robot_description.__file__).parent / 'assets'
     assets_uri = 'package://robot_description/' + profile.description.parent.relative_to(assets).as_posix() + '/'
     description = ET.parse(profile.description).getroot()
@@ -41,6 +42,7 @@ def nodes(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('robot', default_value='so101'),
+        DeclareLaunchArgument('gripper', default_value='pneumatic'),
         DeclareLaunchArgument('foxglove', default_value='false'),
         DeclareLaunchArgument('port', default_value='8766'),
         OpaqueFunction(function=nodes),

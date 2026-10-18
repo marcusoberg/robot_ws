@@ -103,6 +103,33 @@ def test_follower_changes_by_configuration_only(name, leader_q):
         assert mapper.follower.active.tolist() == list(range(6))
 
 
+@pytest.mark.parametrize('name', ['parol6', 'parol6_msg_ai_100'])
+def test_leader_wrist_twist_rotates_follower_wrist_without_branch_switch(name):
+    from robot_description.spec import parol6
+    from robot_server_core.simulation import SimulationEnv
+    mapper = mapping(name)
+    profile = parol6('msg_ai_100' if name == 'parol6_msg_ai_100' else 'pneumatic')
+    env = SimulationEnv(profile, cameras=False)
+    angles = np.r_[np.arange(0, 171, 10), np.arange(170, -171, -10), np.arange(-170, 1, 10)]
+    try:
+        env.activate('wrist-regression')
+        observation = env.observation()
+        previous = mapper.reference.copy()
+        for degrees in angles:
+            leader = mapper.leader_reference.copy()
+            leader[mapper.leader.joints.index('wrist_roll')] = np.deg2rad(degrees)
+            goal = mapper.solve(leader, observation.position, {mapper.spec.joints[-1]: mapper.reference[-1]})
+            np.testing.assert_allclose(goal[:5], mapper.reference[:5], atol=1e-6)
+            assert goal[5] == pytest.approx(mapper.reference[5] + np.deg2rad(degrees), abs=1e-6)
+            assert np.max(np.abs(goal - previous)) <= np.deg2rad(10) + 1e-6
+            for _ in range(3):
+                observation, _ = env.step(goal)
+            assert abs(observation.position[5] - goal[5]) < np.deg2rad(1)
+            previous = goal
+    finally:
+        env.close()
+
+
 def test_encoder_angles_are_not_rescaled_to_follower_limits_and_gripper_is_separate():
     mapper = mapping()
     calibration = {name: dict(id=i+1, drive_mode=0, homing_offset=0, range_min=100, range_max=3900)
@@ -198,7 +225,8 @@ def test_frame_alignment_and_scale(tmp_path):
     q = [.1, -.05, .1, .05, .02, 0.]
     leader = mapper.leader.pose(q)
     target = mapper.target_pose(q)
-    rotation = pin.rpy.rpyToMatrix(0., 0., np.pi / 2)
+    rotation = (pin.rpy.rpyToMatrix(0., 0., np.pi / 2)
+                @ mapper.follower_pose.rotation @ mapper.leader_pose.rotation.T)
     expected_translation = mapper.follower_pose.translation + 2 * rotation @ (leader.translation - mapper.leader_pose.translation)
     expected_rotation = rotation @ leader.rotation @ mapper.leader_pose.rotation.T @ rotation.T @ mapper.follower_pose.rotation
     assert_pose(target, pin.SE3(expected_rotation, expected_translation))

@@ -33,16 +33,17 @@ class UrdfModel:
         self.joints = tuple(joints)
 
         root = ET.parse(description).getroot()
-        defined = {j.attrib['name']: j for j in root.findall('joint') if j.attrib['type'] != 'fixed'}
+        defined = {j.attrib['name']: j for j in root.findall('joint')
+                   if j.attrib['type'] != 'fixed' and j.find('mimic') is None}
 
         if len(set(self.joints)) != len(self.joints) or set(defined) != set(self.joints):
-            raise ValueError('Configured joints must name every movable URDF joint exactly once')
+            raise ValueError('Configured joints must name every movable non-mimic URDF joint exactly once')
 
         lower, upper, units = [], [], []
         for name in self.joints:
             joint = defined[name]
 
-            if joint.attrib['type'] not in ('revolute', 'prismatic') or joint.find('mimic') is not None:
+            if joint.attrib['type'] not in ('revolute', 'prismatic'):
                 raise ValueError(f'IK supports independent bounded revolute/prismatic joints: {name}')
 
             limit = joint.find('limit')
@@ -55,7 +56,7 @@ class UrdfModel:
             units.append('rad' if joint.attrib['type'] == 'revolute' else 'm')
 
         self.spec = ActionSpec(self.joints, tuple(units), tuple(lower), tuple(upper), **observation)
-        self.model = pin.buildModelFromUrdf(str(description))
+        self.model = pin.buildModelFromUrdf(str(description), mimic=True)
         self.data = self.model.createData()
         self.indices = []
         for name in self.joints:
@@ -154,7 +155,9 @@ class FKIKMapping:
         rpy = np.asarray(mapping.get('rotation_rpy', [0., 0., 0.]), dtype=float)
         if not np.isfinite(self.scale) or self.scale <= 0 or rpy.shape != (3,) or not np.isfinite(rpy).all():
             raise ValueError('Invalid leader-to-follower frame mapping')
-        self.rotation = self.leader.pin.rpy.rpyToMatrix(rpy)
+        # Express leader motion in the follower's reference-frame axes.
+        self.rotation = (self.leader.pin.rpy.rpyToMatrix(rpy)
+                         @ self.follower_pose.rotation @ self.leader_pose.rotation.T)
         self.ticks_per_revolution = float(leader.get('ticks_per_revolution', 4096))
         self.direction = np.asarray(leader.get('direction', [1.] * len(self.leader.joints)), dtype=float)
         self.zero = np.asarray(leader.get('zero_radians', [0.] * len(self.leader.joints)), dtype=float)
