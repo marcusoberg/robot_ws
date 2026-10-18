@@ -11,7 +11,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/base_link.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/base_link.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -20,7 +20,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/base_link_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/base_link_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -28,7 +28,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L1.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L1.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -37,7 +37,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L1_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L1_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -52,7 +52,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L2.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L2.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -61,7 +61,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L2_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L2_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -76,7 +76,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L3.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L3.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -85,7 +85,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L3_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L3_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -100,7 +100,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L4.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L4.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -109,7 +109,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L4_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L4_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -124,7 +124,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L5.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L5.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -133,7 +133,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L5_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L5_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -148,7 +148,7 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 -0.021" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L6.STL" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L6.STL" />
       </geometry>
       <material name="">
         <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
@@ -157,7 +157,7 @@
     <collision>
       <origin rpy="0 0 0" xyz="0 0 -0.021" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/L6_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/L6_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -178,13 +178,13 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_body_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/pneumatic_gripper_vertical_body_simplified.stl" />
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_body_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/pneumatic_gripper_vertical_body_simplified.stl" />
       </geometry>
     </collision>
   </link>
@@ -197,32 +197,34 @@
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_right_jaw_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/pneumatic_gripper_vertical_right_jaw_simplified.stl" />
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_right_jaw_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/pneumatic_gripper_vertical_right_jaw_simplified.stl" />
       </geometry>
     </collision>
   </link>
-  <joint name="tool_right_jaw_joint" type="fixed">
+  <joint name="gripper_slide" type="prismatic">
     <parent link="link_6" />
     <child link="tool_right_jaw" />
     <origin rpy="0 0 0" xyz="0 0 0" />
+    <axis xyz="0 1 0" />
+    <limit lower="0" upper="0.0035" velocity="0.1" effort="10" />
   </joint>
   <link name="tool_left_jaw">
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_left_jaw_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/pneumatic_gripper_vertical_left_jaw_simplified.stl" />
       </geometry>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0" />
       <geometry>
-        <mesh filename="package://robot_server/assets/parol6/meshes/pneumatic_gripper_vertical_left_jaw_simplified.stl" />
+        <mesh filename="package://robot_description/deferred/parol6/meshes/pneumatic_gripper_vertical_left_jaw_simplified.stl" />
       </geometry>
     </collision>
   </link>

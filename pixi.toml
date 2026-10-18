@@ -62,10 +62,17 @@ ros-jazzy-foxglove-bridge = "*"
 [feature.ros.activation]
 scripts = ["scripts/activate.sh", "scripts/activate_ros.sh"]
 
+[feature.ros.pypi-dependencies]
+robot-teleop = { path = "src/robot_teleop", editable = true, extras = ["ik"] }
+
 [feature.ros.tasks]
 #teleop-so101 = "python scripts/teleop_so101.py"
+
 teleop = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271"
+teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/so101_ik.toml"
+teleop-parol6 = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
 server = "ros2 launch robot_server server.launch.py foxglove:=false"
+server-parol6 = "ros2 launch robot_server server.launch.py robot:=parol6 foxglove:=false"
 engage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: true}'"
 disengage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: false}'"
 record = "python -m robot_server_node.control record"
@@ -75,7 +82,7 @@ reset = "python -m robot_server_node.control reset"
 pause = "python -m robot_server_node.control pause"
 enable = "python -m robot_server_node.control enable"
 disable = "python -m robot_server_node.control disable"
-test-ros = "python -m pytest tests/test_ros_adapter.py -q"
+test-ros = "python -m pytest tests/test_ros_adapter.py tests/test_ik.py -q"
 setup-ros = "python scripts/setup.py --ros"
 server-ros = "ros2 launch robot_server server.launch.py foxglove:=false"
 foxglove = "ros2 launch foxglove_bridge foxglove_bridge_launch.xml address:=127.0.0.1 port:=8766"

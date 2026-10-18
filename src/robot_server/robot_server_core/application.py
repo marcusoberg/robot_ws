@@ -3,10 +3,10 @@ from .simulation import SimulationEnv
 from .task import PickPlaceSuccess
 
 class Application:
-    def __init__(self, recordings, *, cameras=True, purpose="demonstrations"):
-        self.env = SimulationEnv(cameras=cameras)
+    def __init__(self, recordings, *, cameras=True, purpose="demonstrations", profile=None):
+        self.env = SimulationEnv(profile, cameras=cameras)
         self.recorder = Recorder(recordings,self.env.profile.spec,purpose=purpose)
-        self.task = PickPlaceSuccess()
+        self.task = PickPlaceSuccess(self.env.profile.cube_half_size)
         self.current = self.env.observation()
 
     def activate(self, source):
@@ -48,7 +48,7 @@ class Application:
             self.env.native.disable()
             self.recorder.interrupt("reset")
             self.current = self.env.reset()
-            self.task = PickPlaceSuccess()
+            self.task = PickPlaceSuccess(self.env.profile.cube_half_size)
             return "reset; activate a new session before submitting actions"
         if command == "pause":
             return self.pause().mode

@@ -1,7 +1,7 @@
 {
   "parol6": {
     "assets": "deferred/parol6",
-    "execution": "deferred"
+    "execution": "MuJoCo position actuators only"
   },
   "so101_leader": {
     "assets": "so101_leader",

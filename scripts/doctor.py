@@ -7,4 +7,4 @@ sim.enable();session=sim.activate('doctor');snap=sim.step(p.initial,session,1)
 assert snap.time==50_000_000 and len(snap.trace)==5 and snap.status.mode=='Running'
 sim.disable()
 print(json.dumps({'runtime':'v2','backend':p.backend,'action_spec':p.spec.identity,'ROS_installed':importlib.util.find_spec('rclpy') is not None,
-                  'supported':['SO101 leader to MuJoCo','offline ACT','local/remote inference'],'deferred':['PAROL6','physical follower','Cartesian control']},indent=2))
+                  'supported':['SO101/PAROL6 MuJoCo','SO101 leader with optional FK/IK','offline ACT','local/remote inference'],'deferred':['physical follower']},indent=2))

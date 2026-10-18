@@ -6,5 +6,7 @@ name = "robot-teleop"
 version = "2.0.0"
 requires-python = ">=3.12,<3.13"
 dependencies = ["robot-description>=2,<3", "feetech-servo-sdk>=1.0,<2", "pyserial>=3.5,<4"]
+[project.optional-dependencies]
+ik = ["pin>=4,<5", "scipy>=1.15,<2"]
 [tool.hatch.build.targets.wheel]
 packages = ["robot_teleop"]

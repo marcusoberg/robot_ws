@@ -2,7 +2,8 @@ import itertools
 import numpy as np
 
 class PickPlaceSuccess:
-    def __init__(self):
+    def __init__(self, cube_half_size=.015):
+        self.cube_half_size = cube_half_size
         self.since = None
         self.success = False
 
@@ -25,7 +26,7 @@ class PickPlaceSuccess:
                 continue
             supported |= other == "container_bottom"
             gripped |= "gripper" in ancestors or "base" in ancestors
-        corners = np.array(list(itertools.product((-.015,.015), repeat=3))) @ rotation.T + cube
+        corners = np.array(list(itertools.product((-self.cube_half_size,self.cube_half_size), repeat=3))) @ rotation.T + cube
         local = (corners-base) @ axes
         valid = (np.all(np.abs(local[:,:2]) <= .04) and supported and not gripped)
         if not valid:

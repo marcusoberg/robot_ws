@@ -191,6 +191,14 @@ def test_serial_leader_checks_device_calibration_without_clamping(calibration,tm
         SerialWire.error=0
     finally:leader.close()
     assert all(port.closed for port in SerialWire.connections)
+    raw_leader=SerialLeader('/explicit-port',path,so101().spec,map_positions=False)
+    try:
+        SerialWire.error=1
+        raw,stamp=raw_leader.read_raw()
+        assert raw==dict.fromkeys(so101().spec.joints,2000) and stamp>0
+        with pytest.raises(RuntimeError,match='raw acquisition'):raw_leader.read()
+        SerialWire.error=0
+    finally:raw_leader.close()
     SerialWire.minimum=101
     with pytest.raises(ValueError,match='differs from calibration'):SerialLeader('/explicit-port',path,so101().spec)
     assert all(port.closed for port in SerialWire.connections)

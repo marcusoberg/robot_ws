@@ -4,27 +4,35 @@ import math
 import time
 import numpy as np
 
+
+def validate_calibration(calibration, joints):
+    if set(calibration) != set(joints):
+        raise ValueError("Calibration must define exactly the leader's ordered joints")
+    low, midpoints, high = [], [], []
+    for i, name in enumerate(joints):
+        c = calibration[name]
+        required = {"range_min", "range_max", "id", "drive_mode", "homing_offset"}
+        if not isinstance(c, dict) or not required.issubset(c):
+            raise ValueError(f"Incomplete calibration for {name}")
+        if any(type(c[key]) not in (int, float) for key in ("range_min", "range_max")):
+            raise ValueError(f"Calibration ranges must be numeric: {name}")
+        lo, hi = c["range_min"], c["range_max"]
+        mid = c.get("neutral", (lo + hi) / 2)
+        if (type(mid) not in (int, float) or type(c["id"]) is not int or type(c["homing_offset"]) is not int
+                or c["id"] != i + 1 or c["drive_mode"] != 0 or not -2047 <= c["homing_offset"] <= 2047
+                or not all(math.isfinite(v) for v in (lo, mid, hi)) or not 0 <= lo < mid < hi <= 4095):
+            raise ValueError(f"Invalid calibration for {name}")
+        low.append(lo); midpoints.append(mid); high.append(hi)
+    return low, midpoints, high
+
+
 class LeaderMapping:
     def __init__(self, spec, calibration):
         self.spec = spec
-        if set(calibration) != set(spec.joints):
-            raise ValueError("Calibration must define exactly the follower's ordered joints")
-        self.low, self.mid, self.high = [], [], []
+        self.low, self.mid, self.high = validate_calibration(calibration, spec.joints)
         for i, name in enumerate(spec.joints):
-            c = calibration[name]
-            required={"range_min","range_max","id","drive_mode","homing_offset"}
-            if not isinstance(c,dict) or not required.issubset(c):
-                raise ValueError(f"Incomplete calibration for {name}")
-            lo, hi = c["range_min"], c["range_max"]
-            if any(type(c[key]) not in (int,float) for key in ("range_min","range_max")):
-                raise ValueError(f"Calibration ranges must be numeric: {name}")
-            mid = c.get("neutral", (lo + hi) / 2)
-            if (type(mid) not in (int,float) or type(c["id"]) is not int or type(c["homing_offset"]) is not int
-                or c["id"] != i+1 or c["drive_mode"] != 0 or not -2047 <= c["homing_offset"] <= 2047
-                or not all(math.isfinite(v) for v in (lo, mid, hi))
-                or not 0 <= lo < mid < hi <= 4095 or not spec.lower[i] < 0 < spec.upper[i]):
-                raise ValueError(f"Invalid calibration for {name}")
-            self.low.append(lo); self.mid.append(mid); self.high.append(hi)
+            if not spec.lower[i] < 0 < spec.upper[i]:
+                raise ValueError(f"Joint mapping requires a zero neutral inside the bounds: {name}")
         self.neutral = np.zeros(len(spec.joints))
         self.neutral[-1] = (spec.lower[-1] + spec.upper[-1]) / 2
         for values in (self.low, self.mid, self.high):
@@ -46,12 +54,13 @@ class LeaderMapping:
         return self.spec.validate(q)
 
 class SerialLeader:
-    def __init__(self, port, calibration_path, spec):
+    def __init__(self, port, calibration_path, spec, *, map_positions=True):
         from scservo_sdk import PortHandler, PacketHandler
         if not port:
             raise ValueError("An explicit serial port is required")
         self.calibration = json.loads(Path(calibration_path).read_text())
-        self.mapping = LeaderMapping(spec, self.calibration)
+        validate_calibration(self.calibration, spec.joints)
+        self.mapping = LeaderMapping(spec, self.calibration) if map_positions else None
         self.spec = spec
         self.port = PortHandler(port)
         if not self.port.openPort() or not self.port.setBaudRate(1_000_000):
@@ -76,14 +85,20 @@ class SerialLeader:
             self.close(); raise
 
     def read(self):
+        if self.mapping is None:
+            raise RuntimeError('This leader is configured for raw acquisition; use read_raw()')
+        raw, acquired = self.read_raw()
+        return self.mapping.map(raw), acquired
+
+    def read_raw(self):
         acquired = time.monotonic_ns()
         raw = {}
         for name in self.spec.joints:
             value, result, error = self.bus.read2ByteTxRx(self.port, self.calibration[name]["id"], 56)
-            if result or error:
+            if result or (error & ~0x01):
                 raise RuntimeError(f"Leader feedback failed: {name} ({result}, {error})")
             raw[name] = value
-        return self.mapping.map(raw), acquired
+        return raw, acquired
 
     def close(self):
         self.port.closePort()

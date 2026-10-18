@@ -88,7 +88,6 @@ def test_teleop_launch_preserves_serial_port(tmp_path,resolve_ros_command,option
 
 @pytest.mark.parametrize('task,expected_packages',[
     ('teleop',{'robot_teleop'}),
-    ('teleop-so101',{'robot_teleop'}),
     ('server',{'robot_server','robot_state_publisher'}),
     ('server-ros',{'robot_server','robot_state_publisher'}),
     ('foxglove',{'foxglove_bridge'}),
@@ -100,8 +99,8 @@ def test_pixi_startup_tasks_are_independent(tmp_path,resolve_ros_command,task,ex
     root=Path(__file__).resolve().parents[1]
     tasks=tomllib.loads((root/'pixi.toml').read_text())['feature']['ros']['tasks']
     invocation=shlex.split(tasks[task])
-    if task in ('teleop','teleop-so101'):
-        invocation.extend(['--port','/dev/cu.explicit-test-leader','--calibration',str(tmp_path/'leader.json')])
+    if task == 'teleop':
+        invocation.extend(['port:=/dev/cu.explicit-test-leader', f'calibration:={tmp_path / "leader.json"}'])
     processes,_=resolve_ros_command(invocation)
     assert set(processes)==expected_packages
     if task=='foxglove':
@@ -109,6 +108,14 @@ def test_pixi_startup_tasks_are_independent(tmp_path,resolve_ros_command,task,ex
         assert parameters['address']=='127.0.0.1' and parameters['port']==8766
         assert any(re.fullmatch(pattern,'package://robot_description/so101/assets/base_so101_v2.stl')
                    for pattern in parameters['asset_uri_allowlist'])
+
+
+@pytest.mark.parametrize('config', ['', '/tmp/teleop config/so101_ik.toml'])
+def test_teleop_launch_passes_optional_ik_config(resolve_ros_command, config):
+    processes, _ = resolve_ros_command(['python', 'scripts/teleop_so101.py', '--port', '/dev/test', '--ik-config', config])
+    command, _ = processes['robot_teleop']
+    assert command[command.index('--ik-config') + 1] == config
+    assert set(processes) == {'robot_teleop'}
 
 
 def command(node,operation,source='test'):
@@ -310,7 +317,8 @@ def test_ros_policy_primes_then_stops_when_chunk_ends(tmp_path,monkeypatch):
         executor.shutdown();policy.destroy_node();server.destroy_node();app.close();rclpy.try_shutdown()
 
 
-def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeypatch):
+@pytest.mark.parametrize('ik_enabled', [False, True])
+def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeypatch,ik_enabled):
     from rclpy.executors import SingleThreadedExecutor
     from std_msgs.msg import Bool
     import robot_teleop.so101 as module
@@ -320,13 +328,23 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
     class Leader:
         failed=False
         closed=False
-        def __init__(self,port,calibration,spec):assert port=='/explicit-test-port'
+        def __init__(self,port,calibration,spec,*,map_positions=True):
+            assert port=='/explicit-test-port'
+            assert map_positions is not ik_enabled
+            self.calibration = {name: dict(id=i+1, drive_mode=0, homing_offset=0, range_min=100, range_max=3900)
+                                for i, name in enumerate(spec.joints)}
         def read(self):
             if self.failed:raise ValueError('sample outside calibrated domain')
             return so101().spec.validate(so101().initial),time.monotonic_ns()
+        def read_raw(self):
+            if self.failed:raise ValueError('sample outside calibrated domain')
+            raw = dict.fromkeys(self.calibration,2000)
+            raw['gripper'] = self.calibration['gripper']['range_min']
+            return raw,time.monotonic_ns()
         def close(self):self.closed=True
     monkeypatch.setattr(module,'SerialLeader',Leader)
-    leader=module.LeaderSource('/explicit-test-port',tmp_path/'calibration.json',keyboard=False)
+    config = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config/so101_ik.toml' if ik_enabled else None
+    leader=module.LeaderSource('/explicit-test-port',tmp_path/'calibration.json',keyboard=False,ik_config=config)
     executor=SingleThreadedExecutor();executor.add_node(server);executor.add_node(leader)
     def until(check):
         deadline=time.monotonic()+5
@@ -337,10 +355,16 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
         leader.engage(Bool(data=True))
         until(lambda:server.status().delivered_sequence>=2)
         leader.leader.failed=True
+        with pytest.raises(ValueError, match='sample outside calibrated domain'):
+            until(lambda:not server.status().session)
+        executor.remove_node(leader)
+        leader.destroy_node()
         until(lambda:not server.status().session)
         assert server.status().mode=='Ready'
     finally:
-        executor.shutdown();leader.destroy_node();server.destroy_node();app.close();rclpy.try_shutdown()
+        executor.shutdown()
+        if not leader.leader.closed:leader.destroy_node()
+        server.destroy_node();app.close();rclpy.try_shutdown()
     assert leader.leader.closed
 
 

@@ -27,5 +27,5 @@ def main():
     if a.ros:
         run('colcon','build','--base-paths','src/robot_description','src/robot_data','src/robot_server','src/robot_teleop','src/model_client','src/robot_bringup','--build-base','build/ros-v2','--install-base','install/ros-v2',
             '--merge-install','--symlink-install','--executor','sequential','--cmake-args',f'-DPython3_EXECUTABLE={sys.executable}')
-    print('Standalone SO101 runtime installed. Physical follower and PAROL6 execution are deferred.')
+    print('Standalone runtime installed. SO101 and PAROL6 simulation available; physical followers are deferred.')
 if __name__=='__main__':main()

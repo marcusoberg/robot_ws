@@ -10,14 +10,16 @@ from rosgraph_msgs.msg import Clock
 from robot_server.msg import Status, JointGoal, Control
 from std_msgs.msg import Float64MultiArray, String
 from robot_server_core.application import Application
+from robot_description.spec import load_profile
 
 class Adapter(Node):
     def __init__(self, app=None):
         super().__init__('robot_server',start_parameter_services=False)
         recordings=self.declare_parameter('recordings','recordings').value
+        robot=self.declare_parameter('robot','so101').value
         self.paced=self.declare_parameter('paced',False).value
         self.owns_application=app is None
-        self.app=Application(recordings) if self.owns_application else app
+        self.app=Application(recordings,profile=load_profile(robot)) if self.owns_application else app
         if not self.owns_application and self.paced:
             raise ValueError('An attached adapter cannot own the application clock')
         self.spec=self.app.env.profile.spec
@@ -38,7 +40,7 @@ class Adapter(Node):
         self.create_timer(.05,self.check_source)
         if self.paced:self.app.env.native.start_paced()
         self.visualizer=Visualization(self.app.env,lambda:self.worker.latest if self.worker else self.app.current)
-        self.get_logger().info('SO101 simulation ready: /robot/joint_goal and /robot/control topics; initially paused')
+        self.get_logger().info(f'{self.app.env.profile.description.stem} simulation ready: /robot/joint_goal and /robot/control topics; initially paused')
 
     def status(self):
         snap=self.app.env.native.observe();s=snap.status

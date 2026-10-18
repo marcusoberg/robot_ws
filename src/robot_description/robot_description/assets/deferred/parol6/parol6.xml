@@ -1,6 +1,8 @@
 <mujoco model="PAROL6">
   <compiler angle="radian" autolimits="true" meshdir="meshes"/>
-  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicit"/>
+  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicit">
+    <flag clampctrl="disable"/>
+  </option>
   <asset>
     <!-- Arm visual assets and local transforms follow parol6.urdf. -->
     <mesh name="base_visual" file="base_link.STL"/>
@@ -36,7 +38,7 @@
       <geom class="visual" mesh="base_visual"/>
       <geom class="collision" type="cylinder" size="0.070 0.045" pos="0 0 0.045"/>
       <body name="L1" pos="0 0 0.1105">
-        <joint name="L1" axis="0 0 1" range="-2.1475731 2.1475731" class="drive_L1"/>
+        <joint name="L1" axis="0 0 1" range="-2.147573103039898 2.147573103039898" class="drive_L1"/>
         <inertial pos="0.0052453 0.0289723 0.0992791" mass="0.644801"
                   fullinertia="0.00109429 0.000569962 0.00129488 -0.0000627157 -0.0000570467 -0.000121686"/>
         <geom class="visual" mesh="L1_visual"/>
@@ -54,19 +56,19 @@
             <geom class="visual" mesh="L3_visual"/>
             <geom class="collision" type="capsule" fromto="0 0 0 -0.0435 0.17635 0" size="0.030"/>
             <body name="L4" pos="-0.0435 0.17635 0" euler="1.57079632679 0 0">
-              <joint name="L4" axis="0 0 1" range="-1.8407944 1.8407944" class="drive_L4"/>
+              <joint name="L4" axis="0 0 1" range="-1.8407943987552895 1.8407943987552895" class="drive_L4"/>
               <inertial pos="0.000947028 -0.00897895 -0.0924799" mass="0.393464"
                         fullinertia="0.000371673 0.000332364 0.000250607 -0.0000105560 -0.000000156899 -0.0000610397"/>
               <geom class="visual" mesh="L4_visual"/>
               <geom class="collision" type="capsule" fromto="0 0 0 0 0 -0.095" size="0.026"/>
               <body name="L5" euler="-1.57079632679 0 0">
-                <joint name="L5" axis="0 0 1" range="-1.57079632679 1.57079632679" class="drive_L5"/>
+                <joint name="L5" axis="0 0 1" range="-1.5707963267948966 1.5707963267948966" class="drive_L5"/>
                 <inertial pos="0.000006716 -0.00621421 -0.000960871" mass="0.185172"
                           fullinertia="0.000109177 0.0000841308 0.000110629 -0.000000127195 0.000000084436 -0.000000441596"/>
                 <geom class="visual" mesh="L5_visual"/>
                 <geom class="collision" type="cylinder" size="0.030 0.035" euler="1.57079632679 0 0"/>
                 <body name="L6" pos="0 0.037 0" euler="1.57079632679 0 0">
-                  <joint name="L6" axis="0 0 1" range="0 6.28318530718" class="drive_L6"/>
+                  <joint name="L6" axis="0 0 1" range="0 6.283185307179586" class="drive_L6"/>
                   <inertial pos="0.00632955 -0.000453856 -0.0764442" mass="0.0703261"
                             fullinertia="0.0000140276 0.0000181407 0.0000234608 0.000000315503 -0.000000928470 -0.000000943630"/>
                   <geom class="visual" mesh="L6_visual" pos="0 0 -0.021"/>
@@ -77,6 +79,7 @@
                         size="0.025 0.006 0.005" rgba="0.28 0.3 0.33 1" friction="1.5 0.01 0.001" condim="4"/>
                   <geom class="collision" type="cylinder" size="0.022 0.040"/>
                   <site name="tool_tcp" pos="-0.055 0 -0.027" size="0.004" rgba="0.1 0.8 0.2 1"/>
+                  <camera name="wrist" pos="-0.055 0.06 0.025" xyaxes="1 0 0 0 0.65493 -0.75569" fovy="60.4"/>
                   <body name="pneumatic_jaw" pos="-0.055 0 -0.027">
                     <joint name="gripper_slide" type="slide" axis="0 1 0" range="0 0.0035" damping="8"/>
                     <geom name="moving_finger" type="box" size="0.025 0.006 0.005" pos="0 0.012 0" rgba="0.28 0.3 0.33 1" friction="1.5 0.01 0.001" condim="4"/>
@@ -112,12 +115,12 @@
     <exclude body1="L4" body2="pneumatic_jaw"/>
   </contact>
   <actuator>
-    <position name="L1_position" joint="L1" class="drive_L1"/>
-    <position name="L2_position" joint="L2" class="drive_L2"/>
-    <position name="L3_position" joint="L3" class="drive_L3"/>
-    <position name="L4_position" joint="L4" class="drive_L4"/>
-    <position name="L5_position" joint="L5" class="drive_L5"/>
-    <position name="L6_position" joint="L6" class="drive_L6"/>
-    <position name="gripper_position" joint="gripper_slide" kp="200"/>
+    <position name="L1_position" joint="L1" class="drive_L1" ctrlrange="-2.147573103039898 2.147573103039898"/>
+    <position name="L2_position" joint="L2" class="drive_L2" ctrlrange="-2.5308810043659533 -0.05890486225480862"/>
+    <position name="L3_position" joint="L3" class="drive_L3" ctrlrange="1.8826168509562036 5.024235684484776"/>
+    <position name="L4_position" joint="L4" class="drive_L4" ctrlrange="-1.8407943987552895 1.8407943987552895"/>
+    <position name="L5_position" joint="L5" class="drive_L5" ctrlrange="-1.5707963267948966 1.5707963267948966"/>
+    <position name="L6_position" joint="L6" class="drive_L6" ctrlrange="0 6.283185307179586"/>
+    <position name="gripper_position" joint="gripper_slide" kp="200" ctrlrange="0 0.0035"/>
   </actuator>
 </mujoco>
