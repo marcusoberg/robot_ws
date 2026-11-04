@@ -1,22 +1,17 @@
-# Commands and interfaces
+# Commands on feature/python-api
 
-Activate from `ws`. `pixi run doctor` checks installation without starting a robot.
+| Task | Action |
+| --- | --- |
+| `pixi run server-parol6-serial` | Start the serial ROS node and owned API controller |
+| `pixi run server-parol6-serial restart:=true` | Fully restart the serial server |
+| `pixi run server-stop` | Stop the serial server and its API controller |
+| `pixi run server` | Run the inactive simulation placeholder |
+| `pixi run home` | Ask the API to home; wait for completion |
+| `pixi run enable` / `disable` | Clear / latch the API protective stop |
+| `pixi run pose` / `standby` | Timed joint moves through the API |
+| `pixi run teleop` | Start SO101 → PAROL6 teleop, initially paused |
+| `pixi run engage` / `disengage` | Activate / pause the current source |
+| `pixi run path-source` | Preplan the route, then stream joint targets after engagement |
+| `pixi run visualize-parol6` / `foxglove` | Start the separate visualization nodes / bridge |
 
-| Command | Purpose |
-|---|---|
-| `pixi run setup` | Install/build the fresh SDK and ROS packages |
-| `pixi run build` | Rebuild existing dependencies |
-| `pixi run setup-models` | Install optional model/training interpreter |
-| `ros2 launch robot_bringup system.launch.py` | Compose server, visualization and optional components |
-
-Bringup arguments: `config`, `mode` (`realtime`/`stepped`), `foxglove`, `model`, `model_config`, `model_url`, `instruction`. The SO101 source runs in its own terminal.
-
-Motion topics are `/robot/command` and `/robot/heartbeat`; outcomes are `/robot/result`. Inspect generated schemas with `ros2 interface show robot_server/msg/MotionCommand` and `ros2 interface show robot_server/srv/Control`.
-
-Authority identity is source name + process UUID + native session generation. Observation identity is runtime UUID + timeline generation + observation sequence. Commands also carry sequence/ID and validity; timed model targets retain their original prediction basis/time.
-
-SO101 teleop: `pixi run engage` activates; `pixi run disengage` pauses.
-These publish to `/teleop/engage` using `std_msgs/msg/Bool`.
-Model Client: `ros2 service call /model/engage std_srvs/srv/SetBool '{data: true}'`.
-Use `false` to pause. These services submit requests; logs and `/robot/result`
-report completion. State is available through `ros2 topic echo /robot/state`.
+The placeholder publishes no status and does not execute these commands. Recording and simulation-based replay/evaluation are deferred; the old implementation is on `main`.

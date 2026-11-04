@@ -27,7 +27,6 @@
 !/environments/models/act-public.json
 !/external/
 /external/*
-!/external/robot_runtime/
 !/external/robot_kinematics/
 !/src/
 /src/*

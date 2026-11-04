@@ -20,3 +20,7 @@ license to the workspace.
   Boost.SML, nanobind, Torch and LeRobot retain their respective upstream licenses.
   Dependency versions are recorded in the environment locks, native requirements
   and CMake files. Downloaded dependency sources and binaries are not committed.
+
+## PAROL6 Python API
+
+The experimental serial backend depends on PCrnjak/PAROL6-python-API, pinned to commit `6f17f41a6e8c0c828befb7830259a53b578e2b48`, under GPL-3.0. Source and license: https://github.com/PCrnjak/PAROL6-python-API. The dependency is installed from upstream; its source is not vendored here.

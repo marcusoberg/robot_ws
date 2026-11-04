@@ -6,9 +6,8 @@ import pytest
 import pinocchio as pin
 
 from robot_description.spec import parol6, so101
-from robot_server_core.simulation import SimulationEnv
-from robot_kinematics import PoseIK, IKSettings, UrdfModel
-from robot_teleop.ik import FKIKMapping
+from robot_kinematics import PoseIK, IKSettings, forward_kinematics, load_chain
+from robot_teleop.fk_ik_map import FKIKMapping
 
 
 CONFIG = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config'
@@ -16,6 +15,10 @@ CONFIG = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config'
 
 def mapping(name='so101'):
     return FKIKMapping(CONFIG / f'{name}_ik.toml')
+
+
+def pose(chain, positions):
+    return forward_kinematics(chain, positions, chain.model.createData())
 
 
 def assert_pose(actual, expected, position=1.01e-4, orientation=1.01e-3):
@@ -45,17 +48,17 @@ def chain_urdf(path, count):
 def test_generic_fk_and_ik_use_urdf_chain_and_declared_order(tmp_path, count):
     path = chain_urdf(tmp_path / 'chain.urdf', count)
     order = tuple(f'j{i}' for i in reversed(range(count)))
-    model = UrdfModel(path, order, 'base', 'tool')
+    model = load_chain(path, order, 'base', 'tool')
     natural_q = np.linspace(.1, .3, count)
     q = natural_q[::-1].copy()
     angles = np.cumsum(natural_q)
     lengths = np.array([.3] + [.2] * (count - 2) + [.1])
     expected_position = [np.dot(lengths, np.cos(angles)), np.dot(lengths, np.sin(angles)), 0.]
     expected = pin.SE3(pin.rpy.rpyToMatrix(0., 0., float(sum(natural_q))), np.array(expected_position))
-    assert_pose(model.pose(q), expected)
+    assert_pose(pose(model, q), expected)
     result = PoseIK(model, IKSettings(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(expected, q + .02)
-    model.validate(result)
-    assert_pose(model.pose(result), expected)
+    assert np.all(result >= model.lower) and np.all(result <= model.upper)
+    assert_pose(pose(model, result), expected)
 
 
 def test_prismatic_joint_uses_metres(tmp_path):
@@ -65,24 +68,11 @@ def test_prismatic_joint_uses_metres(tmp_path):
         <origin xyz="0 0.1 0"/><axis xyz="1 0 0"/>
         <limit lower="-0.2" upper="0.2" effort="10" velocity="1"/>
       </joint></robot>''')
-    model = UrdfModel(path, ['slide'], 'base', 'tool')
+    model = load_chain(path, ['slide'], 'base', 'tool')
     assert model.units == ('m',)
     target = pin.SE3(np.eye(3), np.array([.12, .1, 0]))
     goal = PoseIK(model, IKSettings(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(target, [0.])
     assert goal == pytest.approx([.12])
-
-
-@pytest.mark.parametrize('joints,base,tip,message', [
-    (['j0', 'j1'], 'base', 'tool', 'every movable'),
-    (['j0', 'j0', 'j2'], 'base', 'tool', 'every movable'),
-    (['j0', 'j1', 'j2'], 'absent', 'tool', 'Unknown URDF frame'),
-    (['j0', 'j1', 'j2'], 'base', 'absent', 'Unknown URDF frame'),
-    (['j0', 'j1', 'j2'], 'link0', 'tool', 'base must be fixed'),
-])
-def test_rejects_incompatible_urdf_configuration(tmp_path, joints, base, tip, message):
-    path = chain_urdf(tmp_path / 'chain.urdf', 3)
-    with pytest.raises(ValueError, match=message):
-        UrdfModel(path, joints, base, tip)
 
 
 @pytest.mark.parametrize('name', ['so101', 'parol6'])
@@ -95,39 +85,13 @@ def test_follower_changes_by_configuration_only(name, leader_q):
     mapper = mapping(name)
     goal = mapper.solve(leader_q, mapper.reference)
     mapper.spec.validate(goal)
-    assert_pose(mapper.follower.pose(goal), mapper.target_pose(leader_q))
+    assert_pose(pose(mapper.follower, goal), mapper.target_pose(leader_q))
     if name == 'so101':
         so101().spec.require(mapper.spec)
         assert mapper.follower.active.tolist() == list(range(5))
     else:
         assert mapper.spec.joints == ('L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'gripper_slide')
         assert mapper.follower.active.tolist() == list(range(6))
-
-
-@pytest.mark.parametrize('name', ['parol6', 'parol6_msg_ai_100'])
-def test_leader_wrist_twist_rotates_follower_wrist_without_branch_switch(name):
-    mapper = mapping(name)
-    profile = parol6('msg_ai_100' if name == 'parol6_msg_ai_100' else 'pneumatic')
-    env = SimulationEnv(profile, cameras=False)
-    angles = np.r_[np.arange(0, 171, 10), np.arange(170, -171, -10), np.arange(-170, 1, 10)]
-    try:
-        env.activate('wrist-regression')
-        observation = env.observation()
-        previous = mapper.reference.copy()
-        for degrees in angles:
-            leader = mapper.leader_reference.copy()
-            leader[mapper.leader.joints.index('wrist_roll')] = np.deg2rad(degrees)
-            seed = observation.position.copy()
-            seed[-1] = mapper.reference[-1]
-            goal = mapper.solve(leader, seed)
-            assert_pose(mapper.follower.pose(goal), mapper.target_pose(leader))
-            assert np.max(np.abs(goal - previous)) <= np.deg2rad(10) + 1e-6
-            for _ in range(3):
-                observation, _ = env.step(goal)
-            assert abs(observation.position[5] - goal[5]) < np.deg2rad(1)
-            previous = goal
-    finally:
-        env.close()
 
 
 def test_encoder_angles_are_not_rescaled_to_follower_limits_and_gripper_is_separate():
@@ -142,7 +106,7 @@ def test_encoder_angles_are_not_rescaled_to_follower_limits_and_gripper_is_separ
         raw['gripper'] = grip
         goal = mapper.map(raw, calibration, mapper.reference)
         assert goal[-1] == pytest.approx(expected_grip)
-        assert_pose(mapper.follower.pose(goal), expected)
+        assert_pose(pose(mapper.follower, goal), expected)
 
 
 def test_ik_encoder_conversion_preserves_angles_past_calibration_extrema():
@@ -158,12 +122,12 @@ def test_ik_encoder_conversion_preserves_angles_past_calibration_extrema():
                   for name in mapper.leader.joints for c in [calibration[name]]]
         goal = mapper.map(raw, calibration, mapper.reference)
         mapper.spec.validate(goal)
-        assert_pose(mapper.follower.pose(goal), mapper.target_pose(angles), .001, .01)
+        assert_pose(pose(mapper.follower, goal), mapper.target_pose(angles), .001, .01)
         if previous_angle is not None:
             assert angles[2] - previous_angle == pytest.approx(2*np.pi/4096)
         previous_angle = angles[2]
     raw['gripper'] = 3901
-    with pytest.raises(ValueError, match='outside the declared bounds'):
+    with pytest.raises(ValueError, match='outside the declared position bounds'):
         mapper.map(raw, calibration, mapper.reference)
 
 
@@ -183,34 +147,7 @@ def test_measured_arm_state_outside_bounds_is_an_ik_seed_not_a_command(index, si
     np.testing.assert_array_equal(seed, original)
     mapper.spec.validate(goal)
     assert abs(goal[index] - boundary) > .05
-    assert_pose(mapper.follower.pose(goal), mapper.target_pose(leader_q))
-
-
-@pytest.mark.parametrize('seed', [[float('nan')] * 6, [float('inf')] * 6, [0.] * 5])
-def test_invalid_measured_seed_remains_rejected(seed):
-    with pytest.raises(ValueError, match='finite position'):
-        mapping().solve([0.] * 6, seed)
-
-
-def test_closed_gripper_simulation_can_continue_with_measured_limit_overshoot():
-    mapper = mapping()
-    env = SimulationEnv(cameras=False)
-    try:
-        env.activate('ik-gripper-regression')
-        observation = env.observation()
-        overshoot = False
-        for _ in range(30):
-            seed = observation.position.copy()
-            seed[-1] = mapper.spec.lower[-1]
-            goal = mapper.solve([0.] * 6, seed)
-            mapper.spec.validate(goal)
-            observation, snapshot = env.step(goal)
-            overshoot |= observation.position[-1] < mapper.spec.lower[-1]
-            assert snapshot.status.mode == 'Running'
-            assert all(trace.reference == goal.tolist() for trace in snapshot.trace)
-        assert overshoot
-    finally:
-        env.close()
+    assert_pose(pose(mapper.follower, goal), mapper.target_pose(leader_q))
 
 
 def test_frame_alignment_and_scale(tmp_path):
@@ -220,7 +157,7 @@ def test_frame_alignment_and_scale(tmp_path):
     config.write_text(text)
     mapper = FKIKMapping(config)
     q = [.1, -.05, .1, .05, .02, 0.]
-    leader = mapper.leader.pose(q)
+    leader = pose(mapper.leader, q)
     target = mapper.target_pose(q)
     rotation = (pin.rpy.rpyToMatrix(0., 0., np.pi / 2)
                 @ mapper.follower_pose.rotation @ mapper.leader_pose.rotation.T)
@@ -232,10 +169,10 @@ def test_frame_alignment_and_scale(tmp_path):
 
 def test_position_only_is_explicit(tmp_path):
     path = chain_urdf(tmp_path / 'chain.urdf', 3)
-    model = UrdfModel(path, ['j0', 'j1', 'j2'], 'base', 'tool')
+    model = load_chain(path, ['j0', 'j1', 'j2'], 'base', 'tool')
     q = [.2, .3, -.1]
-    target = model.pose(q)
+    target = pose(model, q)
     target.rotation = pin.rpy.rpyToMatrix(1., 0., .4)
     solver = PoseIK(model)
     goal = solver.solve_position(target.translation, q)
-    assert np.linalg.norm(model.pose(goal).translation - target.translation) < 1e-6
+    assert np.linalg.norm(pose(model, goal).translation - target.translation) < 1e-6

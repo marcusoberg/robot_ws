@@ -10,11 +10,11 @@ uv = "0.13.*"
 cmake = ">=3.22,<4"
 ninja = "*"
 compilers = "*"
+numpy = ">=2,<2.5"
 
 [pypi-dependencies]
-numpy = ">=2,<3"
+numpy = ">=2,<2.5"
 mujoco = "==3.10.0"
-nanobind = "==3.1.0"
 hatchling = ">=1.27,<2"
 editables = ">=0.5,<1"
 pytest = ">=8,<9"
@@ -24,7 +24,6 @@ robot-server-core = { path = "src/robot_server", editable = true }
 robot-teleop = { path = "src/robot_teleop", editable = true }
 robot-path = { path = "src/robot_path", editable = true }
 model-client = { path = "src/model_client", editable = true }
-robot-runtime-native = { path = "external/robot_runtime/python", editable = true }
 robot-kinematics = { path = "external/robot_kinematics", editable = true }
 
 [activation]
@@ -38,13 +37,11 @@ setup = "python scripts/setup.py"
 build = "python scripts/setup.py --build-only"
 doctor = "python scripts/doctor.py"
 test = "python -m pytest tests -q"
-smoke-record = "python -m robot_server_core.cli"
 setup-models = "python scripts/manage.py setup"
 dataset = "python scripts/manage.py dataset"
 train = "python scripts/manage.py train"
 export-model = "python scripts/manage.py export"
 serve-model = "python scripts/manage.py serve"
-evaluate = "python scripts/manage.py evaluate"
 
 [feature.ros]
 channels = ["https://prefix.dev/robostack-jazzy", "conda-forge"]
@@ -66,9 +63,9 @@ scripts = ["scripts/activate.sh", "scripts/activate_ros.sh"]
 
 [feature.ros.tasks]
 path-preview = "python -m robot_path.preview"
-path = "ros2 launch robot_path parol6_path.launch.py"
+path = "ros2 launch robot_path parol6_path.launch.py start_server:=false"
 path-source = "ros2 launch robot_path parol6_path.launch.py start_server:=false"
-server-parol6-serial = "ros2 launch robot_server server.launch.py robot:=parol6 backend:=serial scene:=robot_only cameras:=false serial_port:=/dev/cu.usbmodem3074388334331"
+server-parol6-serial = "ros2 launch robot_server server.launch.py backend:=serial serial_port:=/dev/cu.usbmodem3074388334331"
 server-stop = "python -m robot_server_node.shutdown"
 home = "python -m robot_server_node.control home"
 standby = "python -m robot_path.move_joint --standby"
@@ -76,14 +73,14 @@ pose = "python -m robot_path.move_joint --degrees 90.0 -144.683 108.171 5.0 0.0 
 
 viz = "ros2 launch robot_server visualization.launch.py"
 
-teleop = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
+teleop = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
 calibrate-so101 = "environments/models/.venv/bin/python -m lerobot.scripts.lerobot_calibrate --teleop.type=so101_leader --teleop.port=/dev/cu.usbmodem5B910299271 --teleop.id=so101-leader"
-teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/so101_ik.toml"
-teleop-parol6 = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
-teleop-parol6-msg-ai-100 = "ros2 launch robot_teleop so101_so101.launch.py foxglove:=false port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_msg_ai_100_ik.toml"
-server = "ros2 launch robot_server server.launch.py foxglove:=false"
-server-parol6 = "ros2 launch robot_server server.launch.py robot:=parol6 foxglove:=false"
-server-parol6-msg-ai-100 = "ros2 launch robot_server server.launch.py robot:=parol6 gripper:=msg_ai_100 foxglove:=false"
+teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/so101_ik.toml"
+teleop-parol6 = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
+teleop-parol6-msg-ai-100 = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_msg_ai_100_ik.toml"
+server = "ros2 launch robot_server server.launch.py backend:=simulation"
+server-parol6 = "ros2 launch robot_server server.launch.py backend:=simulation"
+server-parol6-msg-ai-100 = "ros2 launch robot_server server.launch.py backend:=simulation gripper:=msg_ai_100"
 engage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: true}'"
 disengage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: false}'"
 record = "python -m robot_server_node.control record"
@@ -93,11 +90,10 @@ reset = "python -m robot_server_node.control reset"
 pause = "python -m robot_server_node.control pause"
 enable = "python -m robot_server_node.control enable"
 disable = "python -m robot_server_node.control disable"
-test-ros = "python -m pytest tests/test_ros_adapter.py tests/test_ik.py -q"
 setup-ros = "python scripts/setup.py --ros"
-server-ros = "ros2 launch robot_server server.launch.py foxglove:=false"
+server-ros = "ros2 launch robot_server server.launch.py backend:=simulation"
 foxglove = "ros2 launch robot_server foxglove.launch.py"
-visualize-parol6 = "ros2 launch robot_server visualization.launch.py robot:=parol6 backend:=serial scene:=robot_only publish_tf:=false"
+visualize-parol6 = "ros2 launch robot_server visualization.launch.py robot:=parol6 backend:=serial scene:=robot_only"
 
 [environments]
 default = { features = [] }

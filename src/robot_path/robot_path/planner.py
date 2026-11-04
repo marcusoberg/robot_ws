@@ -9,7 +9,7 @@ import math
 import numpy as np
 
 from robot_description.spec import parol6
-from robot_kinematics import IKSettings, PoseIK, UrdfModel
+from robot_kinematics import IKSettings, PoseIK, forward_kinematics, load_chain
 from .settings import HOMING_JOINT_SPEEDS
 from .geometry import ShapeGeometry, QUINTIC_PEAK_SPEED, smooth_progress
 
@@ -54,12 +54,14 @@ class PathPlanner:
         settings.validate()
         self.settings = settings
         profile = parol6(settings.gripper, scene="robot_only")
-        self.model = UrdfModel(
+        self.model = load_chain(
             profile.description,
             profile.spec.joints,
             "base_link",
             settings.tip,
         )
+        self.data = self.model.model.createData()
+        self.spec = profile.spec
         if self.model.active.tolist() != list(range(6)):
             raise ValueError(
                 "The tracing frame must use the six arm joints without gripper actuation"
@@ -70,7 +72,7 @@ class PathPlanner:
     def solve_sample(self, target_position, seed):
         result = self.solver.solve_position(target_position, seed)
         error = float(
-            np.linalg.norm(self.model.pose(result).translation - target_position)
+            np.linalg.norm(forward_kinematics(self.model, result, self.data).translation - target_position)
         )
         if error > self.settings.position_tolerance:
             raise ValueError(
@@ -95,7 +97,7 @@ class PathPlanner:
             progress = smooth_progress(index / count)
             target = segment.position(progress)
             result = self.solve_sample(target, seed)
-            midpoint = self.model.pose((seed + result) / 2).translation
+            midpoint = forward_kinematics(self.model, (seed + result) / 2, self.data).translation
             desired_midpoint = segment.position(smooth_progress((index - 0.5) / count))
             midpoint_error = float(np.linalg.norm(midpoint - desired_midpoint))
             if midpoint_error > self.settings.interpolation_tolerance:
@@ -146,8 +148,8 @@ class PathPlanner:
         )
 
     def plan(self, initial_positions, progress=None):
-        initial = self.model.validate(initial_positions)
-        initial_pose = self.model.pose(initial)
+        initial = self.spec.validate(initial_positions)
+        initial_pose = forward_kinematics(self.model, initial, self.data)
         geometry = ShapeGeometry(self.settings, initial_pose.translation).build()
         joints = [initial]
         points = [initial_pose.translation.copy()]

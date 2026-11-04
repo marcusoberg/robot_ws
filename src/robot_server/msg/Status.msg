@@ -21,3 +21,5 @@ string motion_execution
 uint64 motion_id
 float64 motion_elapsed_seconds
 bool motion_complete
+# Post-homing arm pose from the backend, in radians.
+float64[] standby_positions

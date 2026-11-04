@@ -1,19 +1,25 @@
-import threading
+from dataclasses import dataclass, field
 
-class ObservationWorker:
-    def __init__(self, env):
-        self.env=env;self.latest=None;self.failure=None;self.stop=threading.Event()
-        self.thread=threading.Thread(target=self._run,daemon=True);self.thread.start()
-    def _run(self):
-        previous=None
-        try:
-            while not self.stop.is_set():
-                snap=self.env.native.latest_boundary()
-                key=(snap.episode,snap.time)
-                if key!=previous:
-                    self.latest=self.env.observation(snap);previous=key
-                self.stop.wait(.005)
-        except Exception as exc:self.failure=str(exc)
-    def close(self):
-        self.stop.set();self.thread.join()
+import numpy as np
+
+@dataclass(frozen=True)
+class Observation:
+    instance: str
+    episode: int
+    snapshot: int
+    time_ns: int
+    host_acquired_ns: int
+    position: np.ndarray
+    velocity: np.ndarray
+    images: dict[str, np.ndarray]
+    camera_metadata: dict = field(default_factory=dict)
+
+    def features(self):
+        return {"observation.state": self.position,
+                **{f"observation.images.camera_{k}": v for k, v in self.images.items()}}
+
+def immutable(values):
+    a = np.array(values, copy=True)
+    a.flags.writeable = False
+    return a
 

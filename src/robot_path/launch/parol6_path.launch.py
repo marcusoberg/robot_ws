@@ -1,4 +1,4 @@
-"""PAROL6 path source with an optional simulator; the bridge is separate."""
+"""Path source; simulation launch starts only an inactive placeholder."""
 
 import shlex
 import sys
@@ -15,7 +15,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     return LaunchDescription(
         [
-            DeclareLaunchArgument("start_server", default_value="true"),
+            DeclareLaunchArgument("start_server", default_value="false"),
             DeclareLaunchArgument(
                 "gripper",
                 default_value="pneumatic",
@@ -35,12 +35,7 @@ def generate_launch_description():
                 ),
                 condition=IfCondition(LaunchConfiguration("start_server")),
                 launch_arguments={
-                    "robot": "parol6",
-                    "gripper": LaunchConfiguration("gripper"),
-                    "paced": "true",
-                    "foxglove": "false",
-                    "scene": "robot_only",
-                    "cameras": "false",
+                    "backend": "simulation",
                 }.items(),
             ),
             Node(

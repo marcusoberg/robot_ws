@@ -13,7 +13,6 @@ from rclpy.signals import SignalHandlerOptions
 
 from robot_description.spec import parol6
 from robot_path.joint_move import JointMove
-from robot_runtime_native._native import Parol6Serial
 from robot_server_node.client import Source
 
 
@@ -21,11 +20,12 @@ class MoveJoint(Source):
     def __init__(self, arm_target, duration=4., gripper='pneumatic'):
         self.profile = parol6(gripper, scene='robot_only')
         # Validate the requested endpoint and duration before acquiring control.
-        target = JointMove(self.profile.spec, self.profile.initial, arm_target, duration)
+        target = JointMove(self.profile.spec, self.profile.initial,
+                           self.profile.initial[:6] if arm_target is None else arm_target, duration)
         super().__init__('move_joint', self.profile.spec)
         self.motion_executor = SingleThreadedExecutor(context=self.context)
         self.motion_executor.add_node(self)
-        self.arm_target = target.target[:6]
+        self.arm_target = None if arm_target is None else target.target[:6]
         self.duration = target.duration
         self.status_received_at = None
         self.status_count = 0
@@ -73,20 +73,22 @@ class MoveJoint(Source):
                 f'Server must be Ready and unowned; current state is {self.status.mode}: '
                 f'{self.status.reason}. Pause an active source with "pixi run pause" first.'
             )
+        if self.arm_target is None:
+            self.arm_target = np.asarray(self.status.standby_positions)
         self.server_identity = (self.status.instance, self.status.episode)
         self.acknowledged_control('activate')
         initial = list(self.status.measured_positions)
         initial[-1] = self.status.commanded_reference[-1]
         self.plan = JointMove(self.spec, initial, self.arm_target, self.duration)
         self.started_at = time.monotonic()
-        if self.native_motion:
+        if self.controller_motion:
             self.begin_move(self.plan.target, self.duration)
         self.get_logger().info(
             f'Moving to {np.rad2deg(self.arm_target).round(6).tolist()} degrees '
             f'in {self.duration:g} s'
         )
         # Serial owns trajectory time; this timer only renews its producer lease.
-        period = self.spec.period_ns if self.native_motion else self.profile.execution_period_ns
+        period = self.spec.period_ns if self.controller_motion else self.profile.execution_period_ns
         timer = self.create_timer(period / 1e9, self.publish_goal)
         try:
             self.wait_for(lambda: self.completed,
@@ -104,7 +106,7 @@ class MoveJoint(Source):
         if not self.available():
             raise RuntimeError(f'Move interrupted: {self.status.mode}: {self.status.reason}')
         elapsed = time.monotonic() - self.started_at
-        if self.native_motion:
+        if self.controller_motion:
             self.motion_heartbeat()
             finished = self.motion_complete
         else:
@@ -168,7 +170,7 @@ def interrupt(signum, frame):
 def main(arguments=None):
     args = parse_arguments(arguments)
     if args.standby:
-        target = Parol6Serial.standby()
+        target = None
     else:
         target = np.deg2rad(args.degrees)
     rclpy.init(args=[], signal_handler_options=SignalHandlerOptions.NO)

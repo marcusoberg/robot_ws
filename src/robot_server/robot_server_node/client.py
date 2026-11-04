@@ -67,8 +67,8 @@ class Source(Node):
         return self.status is not None and self.session and self.status.mode in ('Ready', 'Running')
 
     @property
-    def native_motion(self):
-        return self.status is not None and self.status.motion_execution == 'native_serial'
+    def controller_motion(self):
+        return self.status is not None and self.status.motion_execution == 'python_api'
 
     def begin_move(self, target, duration):
         self.motion_id += 1
@@ -77,20 +77,12 @@ class Source(Node):
                                    positions=list(target), duration=float(duration))
         return self.motion_heartbeat()
 
-    def begin_path(self, times, positions):
-        self.motion_id += 1
-        self.live_motion = False
-        self.motion_request = dict(motion_kind=JointGoal.JOINT_PATH, motion_id=self.motion_id,
-                                   positions=list(positions[0]), trajectory_times=list(times),
-                                   trajectory_positions=[float(q) for row in positions for q in row])
-        return self.motion_heartbeat()
-
-    def send_live(self, target, period):
+    def send_live(self, target):
         if not self.live_motion:
             self.motion_id += 1
             self.live_motion = True
         self.motion_request = dict(positions=list(target), motion_kind=JointGoal.LIVE_TARGET,
-                                   motion_id=self.motion_id, smoothing_period=float(period))
+                                   motion_id=self.motion_id)
         request = self.motion_request.copy()
         goal = request.pop('positions')
         return self.send(goal, **request)

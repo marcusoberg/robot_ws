@@ -75,14 +75,6 @@ class Profile:
     cube_half_size: float = .015
     task: str = "pick_place"
 
-    def native_spec(self):
-        from robot_runtime_native._native import RobotSpec
-        s = RobotSpec()
-        for key in ("joints", "units", "lower", "upper"):
-            setattr(s, key, getattr(self.spec, key))
-        s.backend = self.backend
-        s.validate()
-        return s
 
 def so101():
     assets = Path(__file__).parent / "assets" / "so101"

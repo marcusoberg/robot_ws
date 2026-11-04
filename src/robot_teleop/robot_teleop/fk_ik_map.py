@@ -8,7 +8,7 @@ import pinocchio as pin
 
 import robot_description
 from robot_description.spec import ActionSpec
-from robot_kinematics import IKSettings, PoseIK, UrdfModel
+from robot_kinematics import IKSettings, PoseIK, forward_kinematics, load_chain
 
 
 def model_path(value, config_path):
@@ -22,19 +22,21 @@ class FKIKMapping:
     def __init__(self, config_path):
         config = tomllib.loads(Path(config_path).read_text())
         leader, follower = config["leader"], config["follower"]
-        self.leader = UrdfModel(model_path(leader["urdf"], config_path),
+        self.leader = load_chain(model_path(leader["urdf"], config_path),
                                 leader["joints"], leader["base"], leader["tip"])
-        self.follower = UrdfModel(model_path(follower["urdf"], config_path),
+        self.follower = load_chain(model_path(follower["urdf"], config_path),
                                   follower["joints"], follower["base"], follower["tip"])
         self.spec = ActionSpec(self.follower.joints, self.follower.units,
                                self.follower.lower, self.follower.upper, **config["observation"])
         self.leader_spec = ActionSpec(self.leader.joints, self.leader.units,
                                       self.leader.lower, self.leader.upper)
-        self.leader_reference = self.leader.validate(leader["reference"])
-        self.reference = self.follower.validate(follower["reference"])
+        self.leader_reference = np.asarray(leader["reference"], dtype=float)
+        self.reference = self.spec.validate(follower["reference"])
         self.startup_duration = follower["startup_duration"]
-        self.leader_pose = self.leader.pose(self.leader_reference)
-        self.follower_pose = self.follower.pose(self.reference)
+        self.leader_data = self.leader.model.createData()
+        self.follower_data = self.follower.model.createData()
+        self.leader_pose = forward_kinematics(self.leader, self.leader_reference, self.leader_data)
+        self.follower_pose = forward_kinematics(self.follower, self.reference, self.follower_data)
         self.scale = config["mapping"]["translation_scale"]
         self.frame_rotation = pin.rpy.rpyToMatrix(np.asarray(config["mapping"]["rotation_rpy"]))
         self.rotation = self.frame_rotation @ self.follower_pose.rotation @ self.leader_pose.rotation.T
@@ -45,7 +47,7 @@ class FKIKMapping:
         self.solver = PoseIK(self.follower, IKSettings(**config["solver"]))
 
     def target_pose(self, positions):
-        pose = self.leader.pose(positions)
+        pose = forward_kinematics(self.leader, positions, self.leader_data)
         translation = self.follower_pose.translation + self.scale * self.rotation @ (
             pose.translation - self.leader_pose.translation
         )
@@ -58,7 +60,7 @@ class FKIKMapping:
     def align_leader(self, raw, calibration):
         """Align the current leader TCP with the follower's configured reference TCP."""
         self.leader_reference, _ = self.decode(raw, calibration)
-        self.leader_pose = self.leader.pose(self.leader_reference)
+        self.leader_pose = forward_kinematics(self.leader, self.leader_reference, self.leader_data)
         self.rotation = self.frame_rotation @ self.follower_pose.rotation @ self.leader_pose.rotation.T
 
     def map(self, raw, calibration, seed, *, continuity=None):
@@ -66,7 +68,7 @@ class FKIKMapping:
         seed = np.asarray(seed, dtype=float).copy()
         for joint, value in direct.items():
             seed[self.spec.joints.index(joint)] = value
-        return self.solve(positions, seed, continuity=continuity)
+        return self.spec.validate(self.solve(positions, seed, continuity=continuity))
 
     def decode(self, raw, calibration):
         ticks = np.asarray([raw[name] for name in self.leader.joints])

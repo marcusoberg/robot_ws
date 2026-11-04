@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from robot_description.spec import so101
 from model_client.policy import PolicyRunner
-from robot_server_core.simulation import Observation
+from robot_server_core.observation import Observation
 from robot_inference.contracts import Features,Prediction,validate_prediction
 from robot_inference.client import RemoteModel
 from robot_inference.server import run
@@ -98,26 +98,3 @@ def test_disconnect_keeps_only_already_buffered_samples():
         assert runner.action(6).observation.observation_sequence==0
         assert runner.action(20) is None
     finally:runner.close()
-
-def test_policy_cannot_command_or_stop_replacement_source():
-    from types import SimpleNamespace
-    from robot_server_core.simulation import SimulationEnv
-    from model_client.evaluation import run_episode
-    env=SimulationEnv(cameras=False)
-    class SwitchingRunner:
-        reset_called=False
-        def prime(self,observation):pass
-        def action(self,index,observation):
-            if index==1:
-                env.pause('source_switch')
-                env.activate('replacement')
-            return SimpleNamespace(goal=env.profile.initial,observation=SimpleNamespace(observation_sequence=index),time_ns=index*50_000_000)
-        def reset(self):self.reset_called=True
-    runner=SwitchingRunner()
-    try:
-        report=run_episode(env,runner,max_seconds=1)
-        status=env.native.observe().status
-        assert report['reason'].startswith('execution_rejected:')
-        assert status.source=='replacement' and status.session and status.mode=='Ready'
-        assert status.sequence==0 and runner.reset_called
-    finally:env.close()

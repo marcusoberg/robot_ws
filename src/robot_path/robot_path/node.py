@@ -91,8 +91,7 @@ class PathNode(Source):
         else:
             self.get_logger().info("Use pixi run engage to start; pixi run disengage to pause")
         self.create_timer(
-            (self.spec.period_ns if self.native_motion else self.profile.execution_period_ns)
-            / 1_000_000_000, self.publish_goal
+            self.spec.period_ns / 1_000_000_000, self.publish_goal
         )
 
     def publish_markers(self):
@@ -138,16 +137,9 @@ class PathNode(Source):
         if not self.started:
             self.started = True
             self.started_at = now
-            if self.native_motion:
-                self.begin_path(self.plan.times, self.plan.joints)
         elapsed = now - self.started_at
-        if self.native_motion:
-            self.motion_heartbeat()
-            finished = self.motion_complete
-        else:
-            self.send(self.plan.at(min(elapsed, self.plan.duration)),
-                      velocities=self.plan.velocity_at(elapsed))
-            finished = elapsed >= self.plan.duration
+        self.send(self.plan.at(min(elapsed, self.plan.duration)))
+        finished = elapsed >= self.plan.duration
         if finished:
             # Continue sending the endpoint until feedback reaches it. Serial
             # feedback is step counts; this confirms firmware progress, not encoders.

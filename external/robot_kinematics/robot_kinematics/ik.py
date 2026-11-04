@@ -1,9 +1,11 @@
-"""Pinocchio closed-loop IK using analytical frame Jacobians and joint integration."""
+"""Damped Pinocchio Jacobian IK. Solver state and integration live here."""
 
 from dataclasses import dataclass
 
 import numpy as np
 import pinocchio as pin
+
+from .chain import configuration, forward_kinematics
 
 
 @dataclass(frozen=True)
@@ -20,10 +22,9 @@ class IKSettings:
 
 
 class PoseIK:
-    """One damped Jacobian solver; pose and position tasks have explicit entry points."""
-
-    def __init__(self, model, settings=IKSettings()):
-        self.model = model
+    def __init__(self, chain, settings=IKSettings()):
+        self.chain = chain
+        self.data = chain.model.createData()
         self.settings = settings
         self.diagnostics = {}
         self.posture_reference = None
@@ -31,12 +32,12 @@ class PoseIK:
 
     def solve(self, target, seed, *, continuity=None):
         def task(positions):
-            pose = self.model.pose(positions)
+            pose = forward_kinematics(self.chain, positions, self.data)
             rotation_error = target.rotation @ pose.rotation.T
             translation = pose.translation - target.translation
             rotation = pin.log3(rotation_error)
-            jacobian = self.model.jacobian(positions, pin.LOCAL_WORLD_ALIGNED)
-            base_rotation = self.model.data.oMf[self.model.base].rotation
+            jacobian = self._jacobian(positions, pin.LOCAL_WORLD_ALIGNED)
+            base_rotation = self.data.oMf[self.chain.base].rotation
             jacobian[:3] = base_rotation.T @ jacobian[:3]
             jacobian[3:] = -pin.Jlog3(rotation_error) @ base_rotation.T @ jacobian[3:]
             scales = np.array([self.settings.position_scale] * 3
@@ -58,24 +59,31 @@ class PoseIK:
         target = np.asarray(target, dtype=float)
 
         def task(positions):
-            pose = self.model.pose(positions)
+            pose = forward_kinematics(self.chain, positions, self.data)
             error = pose.translation - target
-            jacobian = self.model.jacobian(positions, pin.LOCAL_WORLD_ALIGNED)
-            base_rotation = self.model.data.oMf[self.model.base].rotation
+            jacobian = self._jacobian(positions, pin.LOCAL_WORLD_ALIGNED)
+            base_rotation = self.data.oMf[self.chain.base].rotation
             jacobian = base_rotation.T @ jacobian[:3]
             return (error / self.settings.position_scale,
                     jacobian / self.settings.position_scale,
                     float(np.linalg.norm(error)), 0.0)
 
-        positions = self._iterate(task, seed)
+        result = self._iterate(task, seed)
         self.diagnostics['target_translation'] = target.tolist()
-        return positions
+        return result
+
+    def _jacobian(self, positions, frame):
+        chain = self.chain
+        q = configuration(chain, positions)
+        jacobian = pin.computeFrameJacobian(chain.model, self.data, q, chain.tip, frame)
+        return jacobian[:, chain.v_indices[chain.active]]
 
     def _iterate(self, task, seed, *, continuity=None):
-        model, settings = self.model, self.settings
-        positions = model.positions(seed)
-        active = model.active
-        lower, upper = np.asarray(model.lower), np.asarray(model.upper)
+        chain, settings = self.chain, self.settings
+        positions = np.asarray(seed, dtype=float).copy()
+        active = chain.active
+        lower, upper = chain.lower, chain.upper
+        velocity = np.zeros(chain.model.nv)
         positions[active] = np.clip(positions[active], lower[active], upper[active])
         previous = positions[active].copy()
         if self.posture_reference is None or continuity != self.continuity:
@@ -112,8 +120,9 @@ class PoseIK:
                         + posture_system @ (positions[active] - previous)
                         + singularity_system @ (positions[active] - self.posture_reference))
             increment = -np.linalg.solve(system, gradient)
-            positions = model.integrate(positions, settings.step_size * increment)
-            positions[active] = np.clip(positions[active], lower[active], upper[active])
+            velocity[chain.v_indices[active]] = increment
+            q = pin.integrate(chain.model, configuration(chain, positions), settings.step_size * velocity)
+            positions[active] = np.clip(q[chain.q_indices[active]], lower[active], upper[active])
 
         self.diagnostics = dict(
             converged=converged,
@@ -126,4 +135,4 @@ class PoseIK:
         )
         # Returning the bounded iterate and convergence diagnostics is explicit.
         # Applications decide whether the residual meets their task requirements.
-        return model.validate(positions)
+        return positions

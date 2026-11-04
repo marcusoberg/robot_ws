@@ -31,10 +31,7 @@ def existing_server():
     try:
         lock = acquire_server_lock()
     except RuntimeError:
-        try:
-            return json.loads(lock_path().read_text())
-        except (ValueError, OSError):
-            return {}  # Owner started before metadata support; monitor checks live topics.
+        return json.loads(lock_path().read_text())
     else:
         lock.close()
         return None

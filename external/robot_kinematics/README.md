@@ -2,8 +2,8 @@
 
 A Python library with no ROS, robot description package, serial device or application dependency. Install with `pip install -e external/robot_kinematics`; Pixi installs it automatically.
 
-- `robot_kinematics/model.py`: ordered URDF joints, bounds, FK, frame Jacobians and configuration integration using Pinocchio. The base frame must be fixed to the URDF root; joints are bounded scalar revolute or prismatic joints.
-- `robot_kinematics/ik.py`: `PoseIK.solve(target_se3, seed)` for a pose task and `solve_position(target_xyz, seed)` for a position task. Both use the same damped Jacobian iteration and enforce URDF bounds.
+- `robot_kinematics/chain.py`: Pinocchio URDF loading, a data-only joint/frame layout, and a standalone FK function. Pinocchio supplies the joint limits directly; no XML is re-parsed. The base frame must be fixed to the URDF root; joints are bounded scalar revolute or prismatic joints.
+- `robot_kinematics/ik.py`: `PoseIK.solve(target_se3, seed)` for a pose task and `solve_position(target_xyz, seed)` for a position task. Both use the same damped Jacobian iteration and enforce active-joint URDF bounds. The solver owns scratch data, Jacobians and `pin.integrate`; the chain has no integration methods.
 - `robot_kinematics/interpolation.py`: `JointStream`, causal position/velocity-continuous smoothing for sampled targets.
 
 IK uses Pinocchio's analytical frame Jacobian, `Jlog3` for the orientation residual, and `pin.integrate` for joint updates. Translation and orientation residuals have separate scales. The same damped normal-equation solve includes a previous-solution penalty and regularization of weak Jacobian directions toward the engagement posture. There is no SciPy optimizer or numerical differentiation.

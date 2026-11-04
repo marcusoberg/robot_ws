@@ -102,7 +102,7 @@ class LeaderSource(Source):
             self.startup_target = self.ik.reference.copy()
             self.startup_target[passive] = self.startup_initial[passive]
             self.startup_started_at = time.monotonic()
-            if self.native_motion:
+            if self.controller_motion:
                 self.begin_move(self.startup_target, self.ik.startup_duration)
             self.get_logger().info('Moving to the teleop start pose; leader alignment follows at the endpoint.')
 
@@ -135,7 +135,7 @@ class LeaderSource(Source):
         if self.startup_initial is None or not self.available():
             return
         elapsed = time.monotonic() - self.startup_started_at
-        finished = self.motion_complete if self.native_motion else elapsed >= self.ik.startup_duration
+        finished = self.motion_complete if self.controller_motion else elapsed >= self.ik.startup_duration
         active = self.ik.follower.active
         error = np.max(np.abs(np.asarray(self.status.measured_positions)[active] - self.startup_target[active]))
         if not finished or error > .001 or self.ik_future is not None:
@@ -150,8 +150,8 @@ class LeaderSource(Source):
         self.get_logger().info('Start pose reached. SO101 end-effector frame aligned; teleop running.')
 
     def accept_target(self, goal):
-        if self.native_motion:
-            self.send_live(goal, self.spec.period_ns / 1e9)
+        if self.controller_motion:
+            self.send_live(goal)
         else:
             now = time.monotonic()
             if self.joint_stream is None:
@@ -184,13 +184,13 @@ class LeaderSource(Source):
         if self.startup_initial is not None:
             self.move_to_reference()
             return
-        ready = self.live_motion if self.native_motion else self.joint_stream is not None
+        ready = self.live_motion if self.controller_motion else self.joint_stream is not None
         if not ready:
             return
         if time.monotonic() - self.last_ik_feedback >= self.feedback_timeout:
             self.pause('IK feedback expired')
             return
-        if self.native_motion:
+        if self.controller_motion:
             self.motion_heartbeat()
         else:
             goal, velocity = self.joint_stream.at(time.monotonic())
@@ -200,7 +200,7 @@ class LeaderSource(Source):
         elapsed = time.monotonic() - self.startup_started_at
         if elapsed > self.ik.startup_duration + self.startup_timeout:
             self.pause('Start pose was not reached')
-        elif self.native_motion:
+        elif self.controller_motion:
             self.motion_heartbeat()
         else:
             fraction = np.clip(elapsed / self.ik.startup_duration, 0., 1.)
