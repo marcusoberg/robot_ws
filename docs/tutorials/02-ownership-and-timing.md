@@ -1,7 +1,7 @@
 # Control ownership and timing
 
 `select` identifies a producer, not a robot. Producer activation now performs
-enable/acquire inside Robot Server, through the SDK. Teleop Space and the
+enable/acquire inside Robot Server, through the SDK. The teleop engage topic and the
 `/model/engage` service request activation directly. Startup never activates motion.
 
 Only one producer can own a native session. Pause the current producer before

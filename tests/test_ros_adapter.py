@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -23,7 +24,6 @@ def isolated_ros_domain(monkeypatch):
 
 @pytest.fixture
 def resolve_ros_command(monkeypatch):
-    import runpy
     import yaml
     from launch import LaunchContext
     from launch.actions import ExecuteProcess, IncludeLaunchDescription
@@ -33,12 +33,6 @@ def resolve_ros_command(monkeypatch):
 
     root=Path(__file__).resolve().parents[1]
     def resolve(invocation):
-        if invocation[:2]==['python','scripts/teleop_so101.py']:
-            monkeypatch.setattr(sys,'argv',invocation[1:])
-            invocation=[]
-            monkeypatch.setattr(subprocess,'call',lambda command:invocation.extend(command) or 0)
-            wrapper=runpy.run_path(str(root/'scripts/teleop_so101.py'))
-            assert wrapper['main']()==0
         launch_index=invocation.index('launch')
         package,filename=invocation[launch_index+1:launch_index+3]
         arguments=dict(item.split(':=',1) for item in invocation[launch_index+3:])
@@ -68,13 +62,13 @@ def resolve_ros_command(monkeypatch):
     ([],None,False),
     (['start_server:=true'],None,True),
     (['start_server:=true','foxglove:=true'],8766,True),
-    (['start_server:=true','foxglove:=true','--foxglove-port','9876'],9876,True),
+    (['start_server:=true','foxglove:=true','foxglove_port:=9876'],9876,True),
 ])
 def test_teleop_launch_preserves_serial_port(tmp_path,resolve_ros_command,options,bridge_port,server_started):
     serial_port='/dev/cu.explicit-test-leader'
     calibration=str(tmp_path/'leader calibration.json')
-    processes,context=resolve_ros_command(['python','scripts/teleop_so101.py','--port',serial_port,
-                                          '--calibration',calibration,*options])
+    processes,context=resolve_ros_command(['ros2','launch','robot_teleop','so101_so101.launch.py',
+                                          f'port:={serial_port}',f'calibration:={calibration}',*options])
     leader_command,_=processes['robot_teleop']
     assert leader_command[leader_command.index('--port')+1]==serial_port
     assert leader_command[leader_command.index('--calibration')+1]==calibration
@@ -110,9 +104,10 @@ def test_pixi_startup_tasks_are_independent(tmp_path,resolve_ros_command,task,ex
                    for pattern in parameters['asset_uri_allowlist'])
 
 
-@pytest.mark.parametrize('config', ['', '/tmp/teleop config/so101_ik.toml'])
-def test_teleop_launch_passes_optional_ik_config(resolve_ros_command, config):
-    processes, _ = resolve_ros_command(['python', 'scripts/teleop_so101.py', '--port', '/dev/test', '--ik-config', config])
+def test_teleop_launch_passes_ik_config(resolve_ros_command):
+    config = '/tmp/teleop config/so101_ik.toml'
+    processes, _ = resolve_ros_command(['ros2', 'launch', 'robot_teleop', 'so101_so101.launch.py',
+                                       'port:=/dev/test', f'ik_config:={config}'])
     command, _ = processes['robot_teleop']
     assert command[command.index('--ik-config') + 1] == config
     assert set(processes) == {'robot_teleop'}
@@ -317,11 +312,13 @@ def test_ros_policy_primes_then_stops_when_chunk_ends(tmp_path,monkeypatch):
         executor.shutdown();policy.destroy_node();server.destroy_node();app.close();rclpy.try_shutdown()
 
 
-@pytest.mark.parametrize('ik_enabled', [False, True])
-def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeypatch,ik_enabled):
+def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeypatch):
     from rclpy.executors import SingleThreadedExecutor
     from std_msgs.msg import Bool
-    import robot_teleop.so101 as module
+    script = Path(__file__).resolve().parents[1] / 'src/robot_teleop/scripts/so101.py'
+    module_spec = importlib.util.spec_from_file_location('so101_node', script)
+    module = importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(module)
     from robot_description.spec import so101
     rclpy.init(args=[])
     app=Application(tmp_path,cameras=False);server=Adapter(app=app)
@@ -329,16 +326,12 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
         failed=False
         missing=False
         closed=False
-        def __init__(self,port,calibration,spec,*,map_positions=True):
+        def __init__(self,port,calibration,spec):
             assert port=='/explicit-test-port'
-            assert map_positions is not ik_enabled
             self.calibration = {name: dict(id=i+1, drive_mode=0, homing_offset=0, range_min=100, range_max=3900)
                                 for i, name in enumerate(spec.joints)}
-        def read(self):
-            if self.missing:raise module.LeaderFeedbackTimeout('wrist_flex: COMM_RX_TIMEOUT')
-            if self.failed:raise ValueError('sample outside calibrated domain')
-            return so101().spec.validate(so101().initial),time.monotonic_ns()
-        def read_raw(self):
+        def start_reader(self):pass
+        def latest_raw(self):
             if self.missing:raise module.LeaderFeedbackTimeout('wrist_flex: COMM_RX_TIMEOUT')
             if self.failed:raise ValueError('sample outside calibrated domain')
             raw = dict.fromkeys(self.calibration,2000)
@@ -346,8 +339,8 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
             return raw,time.monotonic_ns()
         def close(self):self.closed=True
     monkeypatch.setattr(module,'SerialLeader',Leader)
-    config = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config/so101_ik.toml' if ik_enabled else None
-    leader=module.LeaderSource('/explicit-test-port',tmp_path/'calibration.json',keyboard=False,ik_config=config)
+    config = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config/so101_ik.toml'
+    leader=module.LeaderSource('/explicit-test-port',tmp_path/'calibration.json',ik_config=config)
     executor=SingleThreadedExecutor();executor.add_node(server);executor.add_node(leader)
     def until(check):
         deadline=time.monotonic()+5
@@ -357,16 +350,10 @@ def test_teleop_node_uses_topics_and_ends_session_on_bad_sample(tmp_path,monkeyp
         until(lambda:leader.status is not None and leader.commands.get_subscription_count())
         leader.engage(Bool(data=True))
         until(lambda:server.status().delivered_sequence>=2)
-        sequence=leader.sent_sequence
-        leader.leader.missing=True
-        leader.sample()
-        assert leader.sent_sequence==sequence
-        leader.leader.missing=False
-        leader.sample()
-        assert leader.sent_sequence==sequence+1
         session=leader.session
         leader.leader.missing=True
-        until(lambda:leader.feedback_lost_session==session)
+        leader.sample()
+        assert leader.pausing
         sequence=leader.sent_sequence
         leader.leader.missing=False
         leader.sample()

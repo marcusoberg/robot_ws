@@ -51,7 +51,8 @@
             <inertial pos="0.0155510 -0.0191128 -0.00153323" mass="0.550971" fullinertia="0.000578276 0.000567012 0.000815862 0.000116505 -0.0000119955 0.0000155814" />
             <geom class="visual" mesh="L3_visual" />
             <geom class="collision" type="capsule" fromto="0 0 0 -0.0435 0.17635 0" size="0.030" />
-            <body name="L4" pos="-0.0435 0.17635 0" euler="1.57079632679 0 0">
+            <!-- Same local +90-degree J4 correction as the URDF (w x y z). -->
+            <body name="L4" pos="-0.0435 0.17635 0" quat="0.5 0.5 -0.5 0.5">
               <joint name="L4" axis="0 0 1" range="-1.8407943987552895 1.8407943987552895" class="drive_L4" />
               <inertial pos="0.000947028 -0.00897895 -0.0924799" mass="0.393464" fullinertia="0.000371673 0.000332364 0.000250607 -0.0000105560 -0.000000156899 -0.0000610397" />
               <geom class="visual" mesh="L4_visual" />

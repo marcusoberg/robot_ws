@@ -1,5 +1,3 @@
-version = 1
-
 [leader]
 urdf = "package://robot_description/so101_leader/so101_leader_new_calib.urdf"
 base = "base_link"
@@ -16,17 +14,21 @@ base = "base_link"
 tip = "gripper_frame_link"
 joints = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
 reference = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+startup_duration = 0.0
+
+[observation]
+cameras = ["front", "top", "wrist"]
 
 [mapping]
 translation_scale = 1.0
 rotation_rpy = [0.0, 0.0, 0.0]
 
 [solver]
-# Residual scales balance metres and radians in the least-squares objective.
-position_scale = 0.001
-orientation_scale = 0.01
-orientation = true
-max_evaluations = 80
+max_iterations = 80
+position_tolerance = 0.0001
+orientation_tolerance = 0.001
+damping = 0.000001
+step_size = 0.1
 
 [[direct]]
 input = "gripper"

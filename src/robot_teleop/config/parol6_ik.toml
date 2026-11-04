@@ -1,4 +1,4 @@
-version = 1
+direct = []
 
 [leader]
 urdf = "package://robot_description/so101_leader/so101_leader_new_calib.urdf"
@@ -13,23 +13,22 @@ zero_radians = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 [follower]
 urdf = "package://robot_description/deferred/parol6/parol6.urdf"
 base = "base_link"
-tip = "link_6"
+tip = "tool_tcp"
 joints = ["L1", "L2", "L3", "L4", "L5", "L6", "gripper_slide"]
-reference = [0.0, -1.3, 3.4, 0.0, 0.2, 3.141592653589793, 0.0035]
+# MoveJoint(90.0, -144.683, 108.171, 5.0, 0.0, 90.0, t=4), in radians.
+reference = [1.5707963267948966, -2.5251947216629556, 1.8879401051747862, 0.08726646259971647, 0.0, 1.5707963267948966, 0.0035]
+startup_duration = 4.0
+
+[observation]
+cameras = []
 
 [mapping]
 translation_scale = 1.0
 rotation_rpy = [0.0, 0.0, 0.0]
 
 [solver]
-# Residual scales balance metres and radians in the least-squares objective.
-position_scale = 0.001
-orientation_scale = 0.01
-orientation = true
-max_evaluations = 80
-
-[[direct]]
-input = "gripper"
-joint = "gripper_slide"
-closed = 0.0
-open = 0.0035
+max_iterations = 100
+position_tolerance = 0.0001
+orientation_tolerance = 0.001
+damping = 0.000001
+step_size = 0.1

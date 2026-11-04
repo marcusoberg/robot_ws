@@ -2,8 +2,9 @@
 
 A ROS 2 Jazzy workspace for running a simulated robot, viewing its observations in
 Foxglove, and connecting independent command producers such as ACT inference.
-The C++23 SDK owns execution, control authority, IK, interpolation and backend
-timing. It has no ROS dependency; the Robot Server exposes it through ROS.
+The C++20 runtime owns execution, control authority and backend timing. Command
+producers own IK and trajectory planning; the Robot Server exposes execution
+through ROS.
 
 This repository contains the source, robot meshes/scenes, build scripts and
 locked environments needed for the walkthrough below. Learned model weights are
@@ -14,12 +15,13 @@ needed. Run all commands from the directory containing this README.
 
 | Directory / process | Responsibility |
 | --- | --- |
-| `external/robot_runtime` | ROS-free C++ SDK and matching Python bindings (`Configuration`, `Robot`, `ControlSession`, `Observation`). |
+| `external/robot_runtime` | ROS-free C++ executor, MuJoCo and PAROL6 serial runtimes, with Python bindings. |
 | `src/robot_server` | Owns robot/backend/camera configuration, accepts commands, publishes observations and visualization topics. Its launch file includes Foxglove Bridge. |
 | `src/model_client` | Reads captures, requests inference and submits timestamped joint targets. Requests activation through Robot Server; never controls the SDK directly. |
 | `inference` | Protobuf/WebSocket model serving, processors and portable bundles; no ROS or robot connection. |
 | `training` | Direct LeRobot training, configurations, datasets and training runs. |
-| `src/robot_teleop` | SO101/keyboard teleoperation and demonstration collection. |
+| `src/robot_teleop` | SO101 leader acquisition, frame mapping and ROS teleoperation. |
+| `external/robot_kinematics` | ROS-free Pinocchio FK/IK and joint smoothing shared by teleop and path planning. |
 | `src/robot_bringup` | ROS launch files that compose the packages. |
 | `scripts`, `environments/models` | Workspace setup/build tools and an isolated optional Torch/LeRobot environment. |
 | `docs` | Tutorials, guides, API reference and developer notes. |
@@ -30,7 +32,7 @@ flowchart LR
     Client -->|policy.v1 request| Model[Model Server / ACT]
     Model -->|joint target chunk| Client
     Client -->|ROS commands and heartbeat| Captures
-    Operator[Teleop Space / model engage] -->|activate / pause| Captures
+    Operator[Teleop / model engage] -->|activate / pause| Captures
     Captures --> SDK[C++ SDK]
     SDK --> Sim[MuJoCo]
     Captures -->|TF / joints / images| Bridge[Foxglove Bridge]
@@ -39,6 +41,14 @@ flowchart LR
 
 The Robot Server starts **disabled and without a selected producer**. Launching
 ACT does not enable motion. Only explicit operator commands do that.
+
+For the PAROL6 line/triangle/circle demo, see [robot_path](src/robot_path/README.md).
+`pixi run path` launches the simulator and path source; run the bridge separately
+with `pixi run foxglove`. `pixi run path-preview` checks the full route with
+offline IK. The path package only generates and
+publishes joint goals. The Robot Server owns simulation or serial execution,
+homing and E-stop monitoring. The path launch uses a robot-only scene with camera
+publishing disabled.
 
 ## 1. Clone and build
 
@@ -216,8 +226,8 @@ ros2 service call /model/engage std_srvs/srv/SetBool '{data: false}'
 Wait for `Paused; robot holds position`, then Ctrl+C the launch processes.
 Restart the server for a fresh scene and activate explicitly again.
 
-For SO101 teleoperation, launch `robot_teleop so101_parol6.launch.py` with the leader
-port and tap Space in its terminal. See [teleop controls](src/robot_teleop/README.md).
+For SO101 teleoperation, run `pixi run teleop`, then `pixi run engage` in another
+terminal. Use `pixi run disengage` to pause. See [teleop controls](src/robot_teleop/README.md).
 
 ## Troubleshooting
 

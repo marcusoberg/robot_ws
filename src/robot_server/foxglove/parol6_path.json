@@ -1,0 +1,20 @@
+{
+  "configById": {
+    "3D!parol6": {
+      "cameraState": {
+        "distance": 1.2,
+        "perspective": true
+      },
+      "followTf": "base_link",
+      "topics": {
+        "/path/markers": {
+          "visible": true
+        },
+        "/robot/model": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "layout": "3D!parol6"
+}

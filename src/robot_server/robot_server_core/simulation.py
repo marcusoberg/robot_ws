@@ -118,7 +118,7 @@ class SimulationEnv:
         stop.timeout = self.profile.stop_timeout_ns
         self.native = Simulation(self.profile.native_spec(), str(self.profile.scene), self.profile.initial,
                                  self.profile.execution_period_ns, self.profile.spec.period_ns, stop, self.profile.physics_period_ns)
-        self.renderer = SnapshotRenderer(self.profile) if cameras else None
+        self.renderer = SnapshotRenderer(self.profile) if cameras and self.profile.spec.cameras else None
         self.session = 0
         self.sequence = 0
         self.reset()

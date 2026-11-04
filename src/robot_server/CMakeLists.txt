@@ -8,9 +8,11 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/JointGoal.msg" "msg/Status.msg" "msg/Observation.msg" "msg/Control.msg"
-  DEPENDENCIES sensor_msgs)
+  "msg/TrackingError.msg"
+  DEPENDENCIES sensor_msgs std_msgs)
 if(APPLE)
   # ROS dispatches these libraries by basename. Declare their native dependencies
   # so dyld resolves them through CMake's rpaths before middleware dispatch.
@@ -23,6 +25,8 @@ endif()
 ament_python_install_package(robot_server_node)
 ament_python_install_package(robot_server_core)
 install(PROGRAMS scripts/server DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS robot_server_node/model.py robot_server_node/attach.py DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch foxglove DESTINATION share/${PROJECT_NAME})
+install(FILES SERIAL.md DESTINATION share/${PROJECT_NAME})
 ament_export_dependencies(rosidl_default_runtime)
 ament_package()

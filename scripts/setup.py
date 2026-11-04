@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import sysconfig
 
 ROOT=Path(__file__).resolve().parents[1]
 def run(*args,env=None):
@@ -16,16 +17,15 @@ def main():
     prefix=ROOT/'install/standalone'
     build=ROOT/'build'/f'standalone-{Path(sys.prefix).name}'
     if not a.build_only:
-        run(sys.executable,'-m','pip','install','--no-build-isolation','-e','src/robot_description','-e','src/robot_data','-e','src/robot_server','-e','src/robot_teleop','-e','src/model_client','-e','external/robot_runtime/python')
+        run(sys.executable,'-m','pip','install','--no-build-isolation','-e','external/robot_kinematics','-e','src/robot_description','-e','src/robot_data','-e','src/robot_server','-e','src/robot_teleop','-e','src/robot_path','-e','src/model_client','-e','external/robot_runtime/python')
     run('cmake','-S','external/robot_runtime','-B',build,'-DCMAKE_BUILD_TYPE=Release',
         '-DROBOT_RUNTIME_WITH_PYTHON=ON',f'-DPython_EXECUTABLE={sys.executable}',f'-DCMAKE_INSTALL_PREFIX={prefix}')
     run('cmake','--build',build,'-j',a.jobs)
     run('ctest','--test-dir',build,'--output-on-failure')
     run('cmake','--install',build)
-    import sysconfig
     (Path(sysconfig.get_path('purelib'))/'robot_runtime_native_v2.pth').write_text(str(prefix/'python')+'\n')
     if a.ros:
-        run('colcon','build','--base-paths','src/robot_description','src/robot_data','src/robot_server','src/robot_teleop','src/model_client','src/robot_bringup','--build-base','build/ros-v2','--install-base','install/ros-v2',
+        run('colcon','build','--base-paths','src/robot_description','src/robot_data','src/robot_server','src/robot_teleop','src/robot_path','src/model_client','src/robot_bringup','--build-base','build/ros-v2','--install-base','install/ros-v2',
             '--merge-install','--symlink-install','--executor','sequential','--cmake-args',f'-DPython3_EXECUTABLE={sys.executable}')
-    print('Standalone runtime installed. SO101 and PAROL6 simulation available; physical followers are deferred.')
+    print('Runtime installed. Robot Server uses simulation; robot_path also has an explicit PAROL6 serial mode.')
 if __name__=='__main__':main()

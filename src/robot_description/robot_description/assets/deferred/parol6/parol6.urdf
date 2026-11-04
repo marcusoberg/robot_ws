@@ -116,7 +116,8 @@
   <joint name="L4" type="revolute">
     <parent link="link_3" />
     <child link="link_4" />
-    <origin xyz="-0.0435 0.17635 0" rpy="1.5707963267948966 0 0" />
+    <!-- J4 frame correction: original Rx(pi/2) followed by local Rz(+pi/2). -->
+    <origin xyz="-0.0435 0.17635 0" rpy="1.5707963267948966 -1.5707963267948966 0" />
     <axis xyz="0 0 1" />
     <limit lower="-1.8407943987552895" upper="1.8407943987552895" velocity="2.454369260617026" effort="0" />
   </joint>

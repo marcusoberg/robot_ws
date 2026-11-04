@@ -30,7 +30,7 @@ class ActionSpec:
             or len(self.lower) != n or len(self.upper) != n
             or not np.isfinite(self.lower + self.upper).all() or np.any(np.asarray(self.lower) >= self.upper)
             or len(self.image_shape) != 3 or self.image_shape[2] != 3 or any(type(x) is not int or x <= 0 for x in self.image_shape)
-            or not self.cameras or len(set(self.cameras)) != len(self.cameras)):
+            or len(set(self.cameras)) != len(self.cameras)):
             raise ValueError("Invalid or unsupported action specification")
 
     def validate(self, action):
@@ -73,6 +73,7 @@ class Profile:
     stop_settled_ns: int = 100_000_000
     stop_timeout_ns: int = 5_000_000_000
     cube_half_size: float = .015
+    task: str = "pick_place"
 
     def native_spec(self):
         from robot_runtime_native._native import RobotSpec
@@ -95,7 +96,7 @@ def so101():
     return Profile(spec, assets / "scene.xml", description, (0., -.3, .6, 1.2, 0., -.1))
 
 
-def parol6(gripper="pneumatic"):
+def parol6(gripper="pneumatic", *, scene="pick_place"):
     assets = Path(__file__).parent / "assets" / "deferred" / "parol6"
     description_name, scene_name, initial_gripper = {
         "pneumatic": ("parol6.urdf", "scene.xml", .0035),
@@ -105,12 +106,19 @@ def parol6(gripper="pneumatic"):
     joints = ("L1", "L2", "L3", "L4", "L5", "L6", "gripper_slide")
     defined = {j.attrib["name"]: j for j in ET.parse(description).getroot().findall("joint")}
     limits = [defined[name].find("limit").attrib for name in joints]
+    cameras = ("front", "top", "wrist")
+    if scene == "robot_only":
+        scene_name = f"robot_only_{gripper}.xml"
+        cameras = ()
+    elif scene != "pick_place":
+        raise ValueError(f"Unknown PAROL6 scene: {scene}")
     spec = ActionSpec(joints, ("rad",)*6 + ("m",), tuple(float(x["lower"]) for x in limits),
-                      tuple(float(x["upper"]) for x in limits))
-    return Profile(spec, assets / scene_name, description, (0., -1.3, 3.4, 0., .2, np.pi, initial_gripper), cube_half_size=.007)
+                      tuple(float(x["upper"]) for x in limits), cameras=cameras)
+    return Profile(spec, assets / scene_name, description, (0., -1.3, 3.4, 0., .2, np.pi, initial_gripper),
+                   cube_half_size=.007, task=scene)
 
 
-def load_profile(robot="so101", *, gripper="pneumatic"):
+def load_profile(robot="so101", *, gripper="pneumatic", scene="pick_place"):
     if robot == "parol6":
-        return parol6(gripper)
+        return parol6(gripper, scene=scene)
     return {"so101": so101}[robot]()

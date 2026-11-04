@@ -17,3 +17,7 @@ bool recording
 string command_id
 string command_result
 bool command_accepted
+string motion_execution
+uint64 motion_id
+float64 motion_elapsed_seconds
+bool motion_complete

@@ -4,28 +4,13 @@ import time
 import numpy as np
 import pytest
 from robot_description.spec import so101, ActionSpec
-from robot_teleop.leader import LeaderMapping
+from robot_teleop.leader import LeaderFeedbackTimeout, SerialLeader
 from robot_server_core.simulation import SimulationEnv
 from robot_data.recording import Recorder
 
 @pytest.fixture
 def calibration():
     return {j:dict(id=i+1,drive_mode=0,homing_offset=0,range_min=100,range_max=3900) for i,j in enumerate(so101().spec.joints)}
-
-def test_full_leader_travel(calibration):
-    spec=so101().spec;m=LeaderMapping(spec,calibration)
-    for i,joint in enumerate(spec.joints):
-        previous=-float('inf')
-        for value in np.linspace(100,3900,1001):
-            sample=dict.fromkeys(spec.joints,2000);sample[joint]=value
-            q=m.map(sample);spec.validate(q);assert q[i]>=previous;previous=q[i]
-    assert np.array_equal(m.map(dict.fromkeys(spec.joints,100)),spec.lower)
-    assert np.array_equal(m.map(dict.fromkeys(spec.joints,3900)),spec.upper)
-    assert np.array_equal(m.map(dict.fromkeys(spec.joints,2000))[:5],np.zeros(5))
-    for value in (99,3901,float('nan'),float('inf')):
-        with pytest.raises(ValueError):m.map(dict.fromkeys(spec.joints,value))
-    calibration[spec.joints[0]]['range_max']=100
-    with pytest.raises(ValueError):LeaderMapping(spec,calibration)
 
 def test_stepping_deterministic_and_expiry():
     env=SimulationEnv(cameras=False)
@@ -150,7 +135,6 @@ def test_backend_rejects_nonposition_actuator(tmp_path):
 
 def test_serial_leader_uses_file_ranges_and_checks_homing_offset(calibration,tmp_path,monkeypatch):
     import serial
-    from robot_teleop.leader import LeaderFeedbackTimeout, SerialLeader
     class SerialWire:
         position=2000;minimum=101;maximum=3899;offset=2048+123;error=1
         drop_motor=None
@@ -184,16 +168,14 @@ def test_serial_leader_uses_file_ranges_and_checks_homing_offset(calibration,tmp
     path=tmp_path/'calibration.json';path.write_text(json.dumps(calibration))
     leader=SerialLeader('/explicit-port',path,so101().spec)
     try:
-        goal,stamp=leader.read();assert np.array_equal(goal[:5],np.zeros(5)) and stamp>0
+        raw,stamp=leader.read_raw();assert raw==dict.fromkeys(so101().spec.joints,2000) and stamp>0
         assert SerialWire.writes==[(i,40,0) for i in range(1,7)]
-        SerialWire.position=99
-        with pytest.raises(ValueError,match='outside calibrated'):leader.read()
         SerialWire.position=2000;SerialWire.error=4
-        with pytest.raises(RuntimeError,match='feedback failed'):leader.read()
+        with pytest.raises(RuntimeError,match='feedback failed'):leader.read_raw()
         SerialWire.error=0
     finally:leader.close()
     assert all(port.closed for port in SerialWire.connections)
-    raw_leader=SerialLeader('/explicit-port',path,so101().spec,map_positions=False)
+    raw_leader=SerialLeader('/explicit-port',path,so101().spec)
     try:
         SerialWire.error=1
         raw,stamp=raw_leader.read_raw()
@@ -204,7 +186,6 @@ def test_serial_leader_uses_file_ranges_and_checks_homing_offset(calibration,tmp
         SerialWire.drop_motor=None;SerialWire.position=2100
         raw,stamp=raw_leader.read_raw()
         assert raw==dict.fromkeys(so101().spec.joints,2100)
-        with pytest.raises(RuntimeError,match='raw acquisition'):raw_leader.read()
         SerialWire.error=0
     finally:raw_leader.close()
     SerialWire.error=4

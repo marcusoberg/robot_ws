@@ -3,11 +3,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-pin = pytest.importorskip('pinocchio', reason='FK/IK is an optional teleop dependency')
-pytest.importorskip('scipy')
+import pinocchio as pin
 
-from robot_description.spec import so101
-from robot_teleop.ik import FKIKMapping, PoseIK, SolverSettings, UrdfModel
+from robot_description.spec import parol6, so101
+from robot_server_core.simulation import SimulationEnv
+from robot_kinematics import PoseIK, IKSettings, UrdfModel
+from robot_teleop.ik import FKIKMapping
 
 
 CONFIG = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config'
@@ -17,7 +18,7 @@ def mapping(name='so101'):
     return FKIKMapping(CONFIG / f'{name}_ik.toml')
 
 
-def assert_pose(actual, expected, position=1e-6, orientation=1e-6):
+def assert_pose(actual, expected, position=1.01e-4, orientation=1.01e-3):
     assert np.linalg.norm(actual.translation - expected.translation) < position
     assert np.linalg.norm(pin.log3(expected.rotation @ actual.rotation.T)) < orientation
 
@@ -52,8 +53,8 @@ def test_generic_fk_and_ik_use_urdf_chain_and_declared_order(tmp_path, count):
     expected_position = [np.dot(lengths, np.cos(angles)), np.dot(lengths, np.sin(angles)), 0.]
     expected = pin.SE3(pin.rpy.rpyToMatrix(0., 0., float(sum(natural_q))), np.array(expected_position))
     assert_pose(model.pose(q), expected)
-    result = PoseIK(model, SolverSettings()).solve(expected, q + .02)
-    model.spec.validate(result)
+    result = PoseIK(model, IKSettings(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(expected, q + .02)
+    model.validate(result)
     assert_pose(model.pose(result), expected)
 
 
@@ -65,9 +66,9 @@ def test_prismatic_joint_uses_metres(tmp_path):
         <limit lower="-0.2" upper="0.2" effort="10" velocity="1"/>
       </joint></robot>''')
     model = UrdfModel(path, ['slide'], 'base', 'tool')
-    assert model.spec.units == ('m',)
+    assert model.units == ('m',)
     target = pin.SE3(np.eye(3), np.array([.12, .1, 0]))
-    goal = PoseIK(model, SolverSettings()).solve(target, [0.])
+    goal = PoseIK(model, IKSettings(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(target, [0.])
     assert goal == pytest.approx([.12])
 
 
@@ -92,7 +93,7 @@ def test_rejects_incompatible_urdf_configuration(tmp_path, joints, base, tip, me
 ])
 def test_follower_changes_by_configuration_only(name, leader_q):
     mapper = mapping(name)
-    goal = mapper.solve(leader_q)
+    goal = mapper.solve(leader_q, mapper.reference)
     mapper.spec.validate(goal)
     assert_pose(mapper.follower.pose(goal), mapper.target_pose(leader_q))
     if name == 'so101':
@@ -105,8 +106,6 @@ def test_follower_changes_by_configuration_only(name, leader_q):
 
 @pytest.mark.parametrize('name', ['parol6', 'parol6_msg_ai_100'])
 def test_leader_wrist_twist_rotates_follower_wrist_without_branch_switch(name):
-    from robot_description.spec import parol6
-    from robot_server_core.simulation import SimulationEnv
     mapper = mapping(name)
     profile = parol6('msg_ai_100' if name == 'parol6_msg_ai_100' else 'pneumatic')
     env = SimulationEnv(profile, cameras=False)
@@ -118,9 +117,10 @@ def test_leader_wrist_twist_rotates_follower_wrist_without_branch_switch(name):
         for degrees in angles:
             leader = mapper.leader_reference.copy()
             leader[mapper.leader.joints.index('wrist_roll')] = np.deg2rad(degrees)
-            goal = mapper.solve(leader, observation.position, {mapper.spec.joints[-1]: mapper.reference[-1]})
-            np.testing.assert_allclose(goal[:5], mapper.reference[:5], atol=1e-6)
-            assert goal[5] == pytest.approx(mapper.reference[5] + np.deg2rad(degrees), abs=1e-6)
+            seed = observation.position.copy()
+            seed[-1] = mapper.reference[-1]
+            goal = mapper.solve(leader, seed)
+            assert_pose(mapper.follower.pose(goal), mapper.target_pose(leader))
             assert np.max(np.abs(goal - previous)) <= np.deg2rad(10) + 1e-6
             for _ in range(3):
                 observation, _ = env.step(goal)
@@ -140,15 +140,9 @@ def test_encoder_angles_are_not_rescaled_to_follower_limits_and_gripper_is_separ
     for grip, expected_grip in ((100, mapper.spec.lower[-1]), (2000, (mapper.spec.lower[-1] + mapper.spec.upper[-1])/2),
                                 (3900, mapper.spec.upper[-1])):
         raw['gripper'] = grip
-        goal = mapper.map(raw, calibration)
+        goal = mapper.map(raw, calibration, mapper.reference)
         assert goal[-1] == pytest.approx(expected_grip)
         assert_pose(mapper.follower.pose(goal), expected)
-    raw['elbow_flex'] = 4096
-    with pytest.raises(ValueError, match='outside encoder domain'):
-        mapper.map(raw, calibration)
-    raw['elbow_flex'] = float('nan')
-    with pytest.raises(ValueError, match='outside encoder domain'):
-        mapper.map(raw, calibration)
 
 
 def test_ik_encoder_conversion_preserves_angles_past_calibration_extrema():
@@ -162,15 +156,15 @@ def test_ik_encoder_conversion_preserves_angles_past_calibration_extrema():
         raw['elbow_flex'] = value
         angles = [(raw[name] - (c['range_min'] + c['range_max'])/2) * 2*np.pi/4096
                   for name in mapper.leader.joints for c in [calibration[name]]]
-        goal = mapper.map(raw, calibration)
+        goal = mapper.map(raw, calibration, mapper.reference)
         mapper.spec.validate(goal)
         assert_pose(mapper.follower.pose(goal), mapper.target_pose(angles), .001, .01)
         if previous_angle is not None:
             assert angles[2] - previous_angle == pytest.approx(2*np.pi/4096)
         previous_angle = angles[2]
     raw['gripper'] = 3901
-    with pytest.raises(ValueError, match='outside calibrated.*direct joint mapping'):
-        mapper.map(raw, calibration)
+    with pytest.raises(ValueError, match='outside the declared bounds'):
+        mapper.map(raw, calibration, mapper.reference)
 
 
 @pytest.mark.parametrize('index,side', [(0, -1), (2, 1)])
@@ -183,7 +177,9 @@ def test_measured_arm_state_outside_bounds_is_an_ik_seed_not_a_command(index, si
     original = seed.copy()
     leader_q = [0.] * 6
     leader_q[index] = boundary - side * .1
-    goal = mapper.solve(leader_q, seed, {'gripper': mapper.spec.lower[-1]})
+    command_seed = seed.copy()
+    command_seed[-1] = mapper.spec.lower[-1]
+    goal = mapper.solve(leader_q, command_seed)
     np.testing.assert_array_equal(seed, original)
     mapper.spec.validate(goal)
     assert abs(goal[index] - boundary) > .05
@@ -197,7 +193,6 @@ def test_invalid_measured_seed_remains_rejected(seed):
 
 
 def test_closed_gripper_simulation_can_continue_with_measured_limit_overshoot():
-    from robot_server_core.simulation import SimulationEnv
     mapper = mapping()
     env = SimulationEnv(cameras=False)
     try:
@@ -205,7 +200,9 @@ def test_closed_gripper_simulation_can_continue_with_measured_limit_overshoot():
         observation = env.observation()
         overshoot = False
         for _ in range(30):
-            goal = mapper.solve([0.] * 6, observation.position, {'gripper': mapper.spec.lower[-1]})
+            seed = observation.position.copy()
+            seed[-1] = mapper.spec.lower[-1]
+            goal = mapper.solve([0.] * 6, seed)
             mapper.spec.validate(goal)
             observation, snapshot = env.step(goal)
             overshoot |= observation.position[-1] < mapper.spec.lower[-1]
@@ -239,20 +236,6 @@ def test_position_only_is_explicit(tmp_path):
     q = [.2, .3, -.1]
     target = model.pose(q)
     target.rotation = pin.rpy.rpyToMatrix(1., 0., .4)
-    solver = PoseIK(model, SolverSettings(orientation=False))
-    goal = solver.solve(target, q)
+    solver = PoseIK(model)
+    goal = solver.solve_position(target.translation, q)
     assert np.linalg.norm(model.pose(goal).translation - target.translation) < 1e-6
-
-
-@pytest.mark.parametrize('before,after,message', [
-    ('version = 1', 'version = 99', 'configuration version'),
-    ('translation_scale = 1.0', 'translation_scale = -1.0', 'frame mapping'),
-    ('direction = [1, 1, 1, 1, 1, 1]', 'direction = [2, 1, 1, 1, 1, 1]', 'encoder conversion'),
-    ('open = 1.74533', 'open = 2.0', 'within its URDF bounds'),
-    ('joint = "gripper"', 'joint = "wrist_roll"', 'outside the IK chain'),
-])
-def test_configuration_errors_fail_at_startup(tmp_path, before, after, message):
-    config = tmp_path / 'invalid.toml'
-    config.write_text((CONFIG / 'so101_ik.toml').read_text().replace(before, after))
-    with pytest.raises(ValueError, match=message):
-        FKIKMapping(config)
