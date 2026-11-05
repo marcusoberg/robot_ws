@@ -52,8 +52,8 @@ class FKIKMapping:
         delta = self.rotation @ (pose.rotation @ self.leader_pose.rotation.T) @ self.rotation.T
         return pin.SE3(delta @ self.follower_pose.rotation, translation)
 
-    def solve(self, positions, seed):
-        return self.solver.solve(self.target_pose(positions), seed)
+    def solve(self, positions, seed, *, continuity=None):
+        return self.solver.solve(self.target_pose(positions), seed, continuity=continuity)
 
     def align_leader(self, raw, calibration):
         """Align the current leader TCP with the follower's configured reference TCP."""
@@ -61,12 +61,12 @@ class FKIKMapping:
         self.leader_pose = self.leader.pose(self.leader_reference)
         self.rotation = self.frame_rotation @ self.follower_pose.rotation @ self.leader_pose.rotation.T
 
-    def map(self, raw, calibration, seed):
+    def map(self, raw, calibration, seed, *, continuity=None):
         positions, direct = self.decode(raw, calibration)
         seed = np.asarray(seed, dtype=float).copy()
         for joint, value in direct.items():
             seed[self.spec.joints.index(joint)] = value
-        return self.solve(positions, seed)
+        return self.solve(positions, seed, continuity=continuity)
 
     def decode(self, raw, calibration):
         ticks = np.asarray([raw[name] for name in self.leader.joints])

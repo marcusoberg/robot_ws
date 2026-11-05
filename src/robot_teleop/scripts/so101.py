@@ -15,7 +15,7 @@ from robot_description.spec import so101
 from robot_kinematics import JointStream
 from robot_server_core.motion_trace import MotionTrace
 from robot_server_node.client import Source
-from robot_teleop.fk_ik_mapping import FKIKMapping
+from robot_teleop.fk_ik_map import FKIKMapping
 from robot_teleop.leader import LeaderFeedbackTimeout, SerialLeader
 
 
@@ -127,7 +127,8 @@ class LeaderSource(Source):
             self.ik_request = (self.status.instance, self.session)
             self.ik_sample_time = acquired / 1e9
             self.ik_future = self.ik_worker.submit(
-                self.ik.map, raw, self.leader.calibration, self.last_ik_goal.copy())
+                self.ik.map, raw, self.leader.calibration, self.last_ik_goal.copy(),
+                continuity=self.ik_request)
 
     def finish_startup(self, raw):
         self.preview.publish(JointState(name=list(self.spec.joints), position=self.startup_target.tolist()))

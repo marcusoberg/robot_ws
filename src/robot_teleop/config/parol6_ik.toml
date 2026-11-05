@@ -27,8 +27,14 @@ translation_scale = 1.0
 rotation_rpy = [0.0, 0.0, 0.0]
 
 [solver]
+# Restore the task weighting and wrist regularization used before the refactor.
+# Scales weight residuals; tolerances below only control numerical convergence.
+position_scale = 0.1
+orientation_scale = 0.1
+posture_weight = 1.0
+singularity_condition = 10.0
 max_iterations = 100
-position_tolerance = 0.0001
-orientation_tolerance = 0.001
+position_tolerance = 0.03
+orientation_tolerance = 0.06
 damping = 0.000001
-step_size = 0.1
+step_size = 0.08

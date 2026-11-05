@@ -584,7 +584,8 @@ struct Parol6Serial::Impl {
                 if (std::abs(state.reference[i]-state.position[i]) > max_error) {
                     fault("J" + std::to_string(i+1) + " tracking error " +
                           std::to_string(state.reference[i]-state.position[i]) +
-                          " rad exceeds 0.03 rad (time-aligned reference)", false);
+                          " rad exceeds " + std::to_string(max_error) +
+                          " rad (time-aligned reference)", false);
                     break;
                 }
         samples.push_back(state);
@@ -750,7 +751,8 @@ bool Parol6Serial::submit(const Positions &q, const Positions &velocities) {
         // Legacy immediate targets retain the old jump guard, but compare
         // command continuity, not a future command against an old measurement.
         if (std::abs(q[i]-impl_->motion.target[i]) > max_error) {
-            impl_->fault("sampled command discontinuity exceeds 0.03 rad; submit a timed move", false);
+            impl_->fault("sampled command discontinuity exceeds " + std::to_string(max_error) +
+                         " rad; submit a timed move", false);
             return false;
         }
         double v = velocities.empty() ? 0. : velocities[i];
