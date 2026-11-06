@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 name = "robot-data"
 version = "2.0.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["robot-description>=2,<3", "numpy>=2,<3", "pillow>=11,<13"]
+dependencies = ["robot-core>=0.1,<0.2", "numpy>=2,<3", "pillow>=11,<13"]
 [tool.hatch.build.targets.wheel]
 packages = ["robot_data"]
 [project.scripts]

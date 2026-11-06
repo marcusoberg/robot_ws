@@ -12,6 +12,9 @@
         },
         "/robot/model": {
           "visible": true
+        },
+        "/teleop/target": {
+          "visible": true
         }
       }
     }

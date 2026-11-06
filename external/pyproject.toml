@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "robot-core"
+version = "0.1.0"
+description = "Shared robot contracts, commands and kinematics"
+requires-python = ">=3.12,<3.13"
+dependencies = ["numpy>=2,<3"]
+
+[project.optional-dependencies]
+kinematics = ["pin>=4,<5"]
+mujoco = ["mujoco==3.10.0"]
+python-api = ["parol6 @ git+https://github.com/PCrnjak/PAROL6-python-API.git@6f17f41a6e8c0c828befb7830259a53b578e2b48"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["robot_core"]

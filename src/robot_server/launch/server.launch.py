@@ -3,6 +3,7 @@
 import shlex
 import sys
 
+from robot_core.config import robot_settings
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
@@ -13,11 +14,11 @@ from robot_server_node.ownership import stop_existing_server
 
 def generate_launch_description():
     return LaunchDescription([
-        DeclareLaunchArgument('backend', default_value='simulation', choices=['simulation', 'serial']),
-        DeclareLaunchArgument('serial_port', default_value='/dev/cu.usbmodem3074388334331'),
-        DeclareLaunchArgument('api_port', default_value='5001'),
-        DeclareLaunchArgument('gripper', default_value='pneumatic', choices=['pneumatic', 'msg_ai_100']),
-        DeclareLaunchArgument('restart', default_value='false', choices=['true', 'false']),
+        DeclareLaunchArgument('backend', default_value=robot_settings()['ros']['default_backend'], choices=['simulation', 'serial']),
+        DeclareLaunchArgument('serial_port', default_value=robot_settings()['hardware']['serial_port']),
+        DeclareLaunchArgument('api_port', default_value=str(robot_settings()['hardware']['api_port'])),
+        DeclareLaunchArgument('gripper', default_value=robot_settings()['robots']['parol6']['gripper'], choices=['pneumatic', 'msg_ai_100']),
+        DeclareLaunchArgument('restart', default_value=str(robot_settings()['ros']['restart']).lower(), choices=['true', 'false']),
         OpaqueFunction(function=start_server),
     ])
 

@@ -32,8 +32,7 @@ pixi run model-server --model smolvla --checkpoint models/smolvla-100/model \
   --device mps --offline
 ```
 
-Choose `cpu`, `mps` or `cuda` explicitly for your machine. The matching robot launch
-is `ros2 launch robot_bringup so101_smolvla.launch.py`; its client needs
+Choose `cpu`, `mps` or `cuda` explicitly for your machine. This historical robot workflow requires a camera-producing simulation. Its client uses
 `config:="$(pwd)/src/model_client/config/smolvla.yaml"` and the task instruction
 `Pick up the green cube and place it in the brown container.` This profile uses
 one 512×512 RGB camera and records depth separately. Follow the same separate

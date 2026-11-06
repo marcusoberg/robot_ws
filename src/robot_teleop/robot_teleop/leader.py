@@ -1,26 +1,11 @@
 from pathlib import Path
 import json
-import math
 import time
 import threading
 from scservo_sdk import COMM_RX_TIMEOUT, PacketHandler, PortHandler
 
-
-def validate_calibration(calibration, joints):
-    if set(calibration) != set(joints):
-        raise ValueError("Calibration must define exactly the leader's ordered joints")
-    for i, name in enumerate(joints):
-        c = calibration[name]
-        required = {"range_min", "range_max", "id", "drive_mode", "homing_offset"}
-        if not isinstance(c, dict) or not required.issubset(c):
-            raise ValueError(f"Incomplete calibration for {name}")
-        if any(type(c[key]) not in (int, float) for key in ("range_min", "range_max")):
-            raise ValueError(f"Calibration ranges must be numeric: {name}")
-        lo, hi = c["range_min"], c["range_max"]
-        if (type(c["id"]) is not int or type(c["homing_offset"]) is not int
-                or c["id"] != i + 1 or c["drive_mode"] != 0 or not -2047 <= c["homing_offset"] <= 2047
-                or not all(math.isfinite(v) for v in (lo, hi)) or not 0 <= lo < hi <= 4095):
-            raise ValueError(f"Invalid calibration for {name}")
+from robot_teleop.config import teleop_settings
+from robot_core.validation import leader_calibration
 
 
 class LeaderFeedbackTimeout(TimeoutError):
@@ -29,10 +14,8 @@ class LeaderFeedbackTimeout(TimeoutError):
 
 class SerialLeader:
     def __init__(self, port, calibration_path, spec):
-        if not port:
-            raise ValueError("An explicit serial port is required")
         self.calibration = json.loads(Path(calibration_path).read_text())
-        validate_calibration(self.calibration, spec.joints)
+        leader_calibration(self.calibration, spec.joints)
         self.spec = spec
         self.reader = None
         self.reader_stop = threading.Event()
@@ -40,7 +23,7 @@ class SerialLeader:
         self.latest_sample = None
         self.reader_error = None
         self.port = PortHandler(port)
-        if not self.port.openPort() or not self.port.setBaudRate(1_000_000):
+        if not self.port.openPort() or not self.port.setBaudRate(teleop_settings()['hardware']['leader_baud']):
             self.port.closePort()
             raise RuntimeError(f"Cannot open leader {port}")
         self.bus = PacketHandler(0)

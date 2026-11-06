@@ -7,8 +7,8 @@ from websockets.asyncio.server import serve
 from . import protocol_pb2 as pb
 from .codec import (MAX_PACKET, decode, envelope, features_from_pb, features_to_pb,
                     input_from_pb, prediction_to_pb)
-from .contracts import Features, validate_input, validate_prediction
-from .bundle import verify
+from robot_core.data.inference import Features, validate_input, validate_prediction
+from robot_core.data.bundle import verify
 from .lerobot import LeRobotModel
 
 async def run(model, host, port):

@@ -5,7 +5,7 @@ import time
 import numpy as np
 from robot_inference.bundle import load_local
 from robot_inference.client import RemoteModel
-from robot_inference.contracts import Identity, PolicyInput
+from robot_core.data.inference import Identity, PolicyInput
 
 def main():
     p=argparse.ArgumentParser(description='Compare local and WebSocket inference on an identical recorded observation')

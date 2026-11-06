@@ -54,21 +54,7 @@ discover that bundled cache; keep the base checkpoint path unchanged.
 
 ## Terminal A: simulation and Foxglove Bridge
 
-```sh
-ros2 launch robot_bringup so101_smolvla_base.launch.py
-```
-
-This reuses the existing three-camera SO101 robot configuration. It does not
-alter the robot model, scene, joint limits, camera poses or renderer resolution.
-It starts disabled and unselected. Keep your Foxglove connection to
-`ws://127.0.0.1:8766`; inspect the front, top and wrist RGB topics under
-`/robot/cameras/`.
-
-The inference input maps top to `camera1`, wrist to `camera2` and front to
-`camera3`. It copies each 640×480 image to 256×192 and pads the top with 64 black
-rows to meet the checkpoint's 256×256 input declaration. The original capture
-and calibration metadata stay intact. LeRobot subsequently applies the base
-model's own image processing.
+This historical walkthrough requires a camera-producing SO101 simulation. The Python API branch's ROS simulation node is a silent placeholder, so this step requires the earlier simulation environment.
 
 ## Terminal B: original base Model Server
 

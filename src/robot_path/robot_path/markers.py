@@ -4,12 +4,7 @@ import numpy as np
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker, MarkerArray
 
-
-SHAPE_COLORS = {
-    "line_left": (1.0, 0.35, 0.15),
-    "triangle_front": (0.2, 1.0, 0.45),
-    "circle_right": (0.2, 0.6, 1.0),
-}
+from robot_path.settings import path_settings
 
 
 def line_marker(name, positions, color, width):
@@ -31,12 +26,11 @@ def line_marker(name, positions, color, width):
 
 
 def path_markers(plan):
-    route_width = 0.001  # 1 mm transfer preview, overlaid by 3 mm colored shapes.
-    shape_width = 0.003
-    markers = [line_marker("route", plan.xyz, (0.5, 0.5, 0.5), route_width)]
+    style = path_settings()["markers"]
+    markers = [line_marker("route", plan.xyz, style["route_color"], style["route_width"])]
     labels = np.asarray(plan.labels)
-    for name, color in SHAPE_COLORS.items():
+    for name, color in style["shapes"].items():
         indices = np.flatnonzero(labels == name)
         points = plan.xyz[np.r_[indices[0] - 1, indices]]
-        markers.append(line_marker(name, points, color, shape_width))
+        markers.append(line_marker(name, points, color, style["shape_width"]))
     return MarkerArray(markers=markers)

@@ -73,11 +73,10 @@ glxinfo -B
 ```
 
 This should report a renderer; it is a graphics diagnostic, not a robot test.
-In the activated **Robot Server terminal**, choose GLFW explicitly before launching:
+For an example that opens a MuJoCo viewer inside Ubuntu, select GLFW before starting the viewer.
 
 ```sh
 export MUJOCO_GL=glfw
-ros2 launch robot_bringup so101_act.launch.py
 ```
 
 Do not select EGL solely because inference uses CUDA. Graphics rendering and Torch

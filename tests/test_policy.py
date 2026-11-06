@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 from robot_description.spec import so101
 from model_client.policy import PolicyRunner
-from robot_server_core.observation import Observation
-from robot_inference.contracts import Features,Prediction,validate_prediction
+from robot_core.data.observation import Observation
+from robot_core.data.inference import Features,Prediction,validate_prediction
 from robot_inference.client import RemoteModel
 from robot_inference.server import run
 

@@ -11,4 +11,4 @@ jobs:
           environments: ros
       - run: pixi run -e ros setup-ros --build-only
       - run: pixi run -e ros doctor
-      - run: pixi run -e ros python -m compileall -q src external/robot_kinematics
+      - run: pixi run -e ros python -m compileall -q src external/robot_core

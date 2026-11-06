@@ -1,15 +1,17 @@
 version: 7
 platforms:
-- name: linux-64
+- name: linux-glibc239
+  subdir: linux-64
   virtual-packages:
   - __unix=0=0
   - __linux=4.18
-  - __glibc=2.28
+  - __glibc=2.39
   - __archspec=0=x86_64
-- name: osx-arm64
+- name: macos-15-arm64
+  subdir: osx-arm64
   virtual-packages:
   - __unix=0=0
-  - __osx=13.0
+  - __osx=15.0
   - __archspec=0=m1
 environments:
   default:
@@ -18,7 +20,7 @@ environments:
     indexes:
     - https://pypi.org/simple
     packages:
-      linux-64:
+      linux-glibc239:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.46.1-default_hfdba357_103.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
@@ -84,7 +86,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.28-h4ee821c_9.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/wheel-0.48.0-pyhd8ed1ab_0.conda
-      - pypi: ./external/robot_kinematics
+      - pypi: ./external
       - pypi: ./src/model_client
       - pypi: ./src/robot_data
       - pypi: ./src/robot_description
@@ -192,7 +194,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fc/f4/dadfec469313c7f428efa7e84b4aba9732f813c13ea7131a24b7b008ef57/kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/fe/ed/f1831681fce0e3242346e5458486003c5f124ed69e5e0b847fd029db4973/websockets-16.1.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
-      osx-arm64:
+      macos-15-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/compiler-rt21_osx-arm64-21.1.8-hb8825d9_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/compiler-rt_osx-arm64-21.1.8-hce30654_2.conda
@@ -277,7 +279,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.13.1-hfc06f74_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
-      - pypi: ./external/robot_kinematics
+      - pypi: ./external
       - pypi: ./src/model_client
       - pypi: ./src/robot_data
       - pypi: ./src/robot_description
@@ -392,7 +394,7 @@ environments:
     indexes:
     - https://pypi.org/simple
     packages:
-      linux-64:
+      linux-glibc239:
       - conda: https://prefix.dev/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
       - conda: https://prefix.dev/conda-forge/linux-64/at-spi2-atk-2.38.0-h0630a04_3.tar.bz2
       - conda: https://prefix.dev/conda-forge/linux-64/at-spi2-core-2.40.3-h0630a04_0.tar.bz2
@@ -871,7 +873,7 @@ environments:
       - conda: https://prefix.dev/robostack-jazzy/linux-64/ros2-visualization-msgs-5.3.8-np2py312h1bab3cf_25.conda
       - conda: https://prefix.dev/robostack-jazzy/linux-64/ros2-yaml-cpp-vendor-9.0.1-np2py312h1bab3cf_25.conda
       - conda: https://prefix.dev/robostack-jazzy/linux-64/ros2-zstd-vendor-0.26.11-np2py312h6a0d68b_25.conda
-      - pypi: ./external/robot_kinematics
+      - pypi: ./external
       - pypi: ./src/model_client
       - pypi: ./src/robot_data
       - pypi: ./src/robot_description
@@ -967,7 +969,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/fc/f4/dadfec469313c7f428efa7e84b4aba9732f813c13ea7131a24b7b008ef57/kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/fe/ed/f1831681fce0e3242346e5458486003c5f124ed69e5e0b847fd029db4973/websockets-16.1.1-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl
-      osx-arm64:
+      macos-15-arm64:
       - conda: https://prefix.dev/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/adwaita-icon-theme-51.0-unix_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/argcomplete-3.7.2-pyhcf101f3_0.conda
@@ -1441,7 +1443,7 @@ environments:
       - conda: https://prefix.dev/robostack-jazzy/osx-arm64/ros2-visualization-msgs-5.3.8-np2py312haf4906a_21.conda
       - conda: https://prefix.dev/robostack-jazzy/osx-arm64/ros2-yaml-cpp-vendor-9.0.1-np2py312haf4906a_21.conda
       - conda: https://prefix.dev/robostack-jazzy/osx-arm64/ros2-zstd-vendor-0.26.11-np2py312haf4906a_21.conda
-      - pypi: ./external/robot_kinematics
+      - pypi: ./external
       - pypi: ./src/model_client
       - pypi: ./src/robot_data
       - pypi: ./src/robot_description
@@ -19147,15 +19149,18 @@ packages:
   run_exports: {}
   size: 26077
   timestamp: 1788268475878
-- pypi: ./external/robot_kinematics
-  name: robot-kinematics
+- pypi: ./external
+  name: robot-core
   requires_dist:
   - numpy>=2,<3
-  - pin>=4,<5
+  - pin>=4,<5 ; extra == 'kinematics'
+  - mujoco==3.10.0 ; extra == 'mujoco'
+  - parol6 @ git+https://github.com/PCrnjak/PAROL6-python-API.git@6f17f41a6e8c0c828befb7830259a53b578e2b48 ; extra == 'python-api'
   requires_python: '>=3.12,<3.13'
 - pypi: ./src/model_client
   name: model-client
   requires_dist:
+  - robot-core>=0.1,<0.2
   - robot-description>=2,<3
   - numpy>=2,<3
   - protobuf==7.36.2
@@ -19164,33 +19169,33 @@ packages:
 - pypi: ./src/robot_data
   name: robot-data
   requires_dist:
-  - robot-description>=2,<3
+  - robot-core>=0.1,<0.2
   - numpy>=2,<3
   - pillow>=11,<13
   requires_python: '>=3.12,<3.13'
 - pypi: ./src/robot_description
   name: robot-description
   requires_dist:
+  - robot-core>=0.1,<0.2
   - numpy>=2,<3
   requires_python: '>=3.12,<3.13'
 - pypi: ./src/robot_path
   name: robot-path
   requires_dist:
   - robot-description>=2,<3
-  - robot-kinematics>=0.1,<0.2
+  - robot-core[kinematics]>=0.1,<0.2
   requires_python: '>=3.12,<3.13'
 - pypi: ./src/robot_server
-  name: robot-server-core
+  name: robot-server-node
   requires_dist:
   - robot-description>=2,<3
-  - robot-data>=2,<3
-  - parol6 @ git+https://github.com/PCrnjak/PAROL6-python-API.git@6f17f41a6e8c0c828befb7830259a53b578e2b48
+  - robot-core[kinematics,python-api]>=0.1,<0.2
   requires_python: '>=3.12,<3.13'
 - pypi: ./src/robot_teleop
   name: robot-teleop
   requires_dist:
   - robot-description>=2,<3
-  - robot-kinematics>=0.1,<0.2
+  - robot-core[kinematics]>=0.1,<0.2
   - feetech-servo-sdk>=1.0,<2
   - pyserial>=3.5,<4
   requires_python: '>=3.12,<3.13'

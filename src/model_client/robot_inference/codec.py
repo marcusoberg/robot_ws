@@ -4,7 +4,7 @@ from dataclasses import asdict
 import numpy as np
 from google.protobuf.message import DecodeError
 from . import protocol_pb2 as pb
-from .contracts import Features, Identity, PolicyInput, Prediction
+from robot_core.data.inference import Features, Identity, PolicyInput, Prediction
 
 MAX_PACKET = 64 * 1024 * 1024
 VERSION = 2

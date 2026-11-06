@@ -23,3 +23,6 @@ float64 motion_elapsed_seconds
 bool motion_complete
 # Post-homing arm pose from the backend, in radians.
 float64[] standby_positions
+# Workspace FK at the measured joint positions.
+string tcp_link
+geometry_msgs/PoseStamped tcp_pose

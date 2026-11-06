@@ -1,7 +1,11 @@
 [workspace]
 name = "robot-workspace"
 channels = ["conda-forge"]
-platforms = ["osx-arm64", "linux-64"]
+# The pinned PAROL6 API ships pinokin wheels for these deployment targets.
+platforms = [
+    { name = "macos-15-arm64", platform = "osx-arm64", macos = "15.0" },
+    { name = "linux-glibc239", platform = "linux-64", glibc = "2.39" },
+]
 
 [dependencies]
 python = "3.12.*"
@@ -13,6 +17,7 @@ compilers = "*"
 numpy = ">=2,<2.5"
 
 [pypi-dependencies]
+parol6 = { git = "https://github.com/PCrnjak/PAROL6-python-API.git", rev = "6f17f41a6e8c0c828befb7830259a53b578e2b48" }
 numpy = ">=2,<2.5"
 mujoco = "==3.10.0"
 hatchling = ">=1.27,<2"
@@ -20,11 +25,11 @@ editables = ">=0.5,<1"
 pytest = ">=8,<9"
 robot-description = { path = "src/robot_description", editable = true }
 robot-data = { path = "src/robot_data", editable = true }
-robot-server-core = { path = "src/robot_server", editable = true }
+robot-server-node = { path = "src/robot_server", editable = true }
 robot-teleop = { path = "src/robot_teleop", editable = true }
 robot-path = { path = "src/robot_path", editable = true }
 model-client = { path = "src/model_client", editable = true }
-robot-kinematics = { path = "external/robot_kinematics", editable = true }
+robot-core = { path = "external", editable = true }
 
 [activation]
 scripts = ["scripts/activate.sh"]
@@ -65,22 +70,10 @@ scripts = ["scripts/activate.sh", "scripts/activate_ros.sh"]
 path-preview = "python -m robot_path.preview"
 path = "ros2 launch robot_path parol6_path.launch.py start_server:=false"
 path-source = "ros2 launch robot_path parol6_path.launch.py start_server:=false"
-server-parol6-serial = "ros2 launch robot_server server.launch.py backend:=serial serial_port:=/dev/cu.usbmodem3074388334331"
-server-stop = "python -m robot_server_node.shutdown"
+
 home = "python -m robot_server_node.control home"
-standby = "python -m robot_path.move_joint --standby"
-pose = "python -m robot_path.move_joint --degrees 90.0 -144.683 108.171 5.0 0.0 90.0 --time 4"
-
-viz = "ros2 launch robot_server visualization.launch.py"
-
-teleop = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
-calibrate-so101 = "environments/models/.venv/bin/python -m lerobot.scripts.lerobot_calibrate --teleop.type=so101_leader --teleop.port=/dev/cu.usbmodem5B910299271 --teleop.id=so101-leader"
-teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/so101_ik.toml"
-teleop-parol6 = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_ik.toml"
-teleop-parol6-msg-ai-100 = "ros2 launch robot_teleop so101_so101.launch.py port:=/dev/cu.usbmodem5B910299271 ik_config:=/Users/marcusoberg/PROJECTS/KTHROBOTICS/ws/src/robot_teleop/config/parol6_msg_ai_100_ik.toml"
-server = "ros2 launch robot_server server.launch.py backend:=simulation"
-server-parol6 = "ros2 launch robot_server server.launch.py backend:=simulation"
-server-parol6-msg-ai-100 = "ros2 launch robot_server server.launch.py backend:=simulation gripper:=msg_ai_100"
+standby = "python -m robot_server_client.move_joint --standby"
+pose = "python -m robot_server_client.move_joint --pose"
 engage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: true}'"
 disengage = "ros2 topic pub --once /teleop/engage std_msgs/msg/Bool '{data: false}'"
 record = "python -m robot_server_node.control record"
@@ -94,6 +87,21 @@ setup-ros = "python scripts/setup.py --ros"
 server-ros = "ros2 launch robot_server server.launch.py backend:=simulation"
 foxglove = "ros2 launch robot_server foxglove.launch.py"
 visualize-parol6 = "ros2 launch robot_server visualization.launch.py robot:=parol6 backend:=serial scene:=robot_only"
+
+
+viz = "ros2 launch robot_server visualization.launch.py"
+
+teleop = "ros2 launch robot_teleop so101_so101.launch.py profile:=parol6"
+calibrate-so101 = "python -m robot_teleop.calibrate"
+teleop-so101 = "ros2 launch robot_teleop so101_so101.launch.py profile:=so101"
+teleop-parol6 = "ros2 launch robot_teleop so101_so101.launch.py profile:=parol6"
+teleop-parol6-msg-ai-100 = "ros2 launch robot_teleop so101_so101.launch.py profile:=parol6_msg_ai_100"
+
+server = "ros2 launch robot_server server.launch.py backend:=simulation"
+server-parol6-serial = "ros2 launch robot_server server.launch.py backend:=serial"
+server-parol6 = "ros2 launch robot_server server.launch.py backend:=simulation"
+server-parol6-msg-ai-100 = "ros2 launch robot_server server.launch.py backend:=simulation gripper:=msg_ai_100"
+server-stop = "python -m robot_server_node.shutdown"
 
 [environments]
 default = { features = [] }

@@ -1,5 +1,6 @@
 """Path source; simulation launch starts only an inactive placeholder."""
 
+from robot_path.settings import path_settings
 import shlex
 import sys
 
@@ -15,18 +16,18 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     return LaunchDescription(
         [
-            DeclareLaunchArgument("start_server", default_value="false"),
+            DeclareLaunchArgument("start_server", default_value=str(path_settings()["path_planner"]["start_server"]).lower()),
             DeclareLaunchArgument(
                 "gripper",
-                default_value="pneumatic",
+                default_value=str(path_settings()["path"]["gripper"]),
                 choices=["pneumatic", "msg_ai_100"],
             ),
-            DeclareLaunchArgument("width", default_value="0.18"),
-            DeclareLaunchArgument("distance", default_value="0.30"),
-            DeclareLaunchArgument("height", default_value="0.16"),
-            DeclareLaunchArgument("speed", default_value="1.0",
-                                  description="Homing-rate multiplier: 0.5 is half speed"),
-            DeclareLaunchArgument("tip", default_value="tool_tcp"),
+            DeclareLaunchArgument("width", default_value=str(path_settings()["path"]["width"])),
+            DeclareLaunchArgument("distance", default_value=str(path_settings()["path"]["distance"])),
+            DeclareLaunchArgument("height", default_value=str(path_settings()["path"]["height"])),
+            DeclareLaunchArgument("speed", default_value=str(path_settings()["path"]["speed"]),
+                                  description="Cartesian path rate multiplier"),
+            DeclareLaunchArgument("tip", default_value=str(path_settings()["path"]["tip"])),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution(

@@ -2,6 +2,10 @@ import argparse
 import json
 from pathlib import Path
 
+from robot_core.data.bundle import export
+from .dataset import convert
+from .learning import train
+
 def main():
     parser=argparse.ArgumentParser(description='SO101 simulation v2. Physical followers, PAROL6 and Cartesian commands are not available.')
     sub=parser.add_subparsers(dest='command',required=True)
@@ -11,13 +15,10 @@ def main():
     args=parser.parse_args();kw=vars(args).copy();command=kw.pop('command')
     try:
         if command=='dataset':
-            from .dataset import convert
             print(json.dumps(convert(**kw),indent=2))
         elif command=='train':
-            from .learning import train
             print(json.dumps(train(**kw),indent=2))
         elif command=='export':
-            from robot_inference.bundle import export
             print(json.dumps(export(**kw),indent=2))
     except KeyboardInterrupt:
         parser.exit(130,"Stopped.\n")

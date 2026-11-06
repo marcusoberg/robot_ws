@@ -1,20 +1,16 @@
-from pathlib import Path
+from copy import deepcopy
 
 import numpy as np
 import pytest
 
 import pinocchio as pin
 
+from robot_core.config import robot_settings
 from robot_description.spec import parol6, so101
-from robot_kinematics import PoseIK, IKSettings, forward_kinematics, load_chain
-from robot_teleop.fk_ik_map import FKIKMapping
-
-
-CONFIG = Path(__file__).resolve().parents[1] / 'src/robot_teleop/config'
-
-
-def mapping(name='so101'):
-    return FKIKMapping(CONFIG / f'{name}_ik.toml')
+from robot_core.kinematics import PoseIK, IKSettings, forward_kinematics, load_chain
+from robot_teleop.config import tracking_profile
+from robot_teleop.leader_pose import LeaderPose
+from robot_core.kinematics.servo import CartesianServo
 
 
 def pose(chain, positions):
@@ -56,7 +52,7 @@ def test_generic_fk_and_ik_use_urdf_chain_and_declared_order(tmp_path, count):
     expected_position = [np.dot(lengths, np.cos(angles)), np.dot(lengths, np.sin(angles)), 0.]
     expected = pin.SE3(pin.rpy.rpyToMatrix(0., 0., float(sum(natural_q))), np.array(expected_position))
     assert_pose(pose(model, q), expected)
-    result = PoseIK(model, IKSettings(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(expected, q + .02)
+    result = PoseIK(model, IKSettings.configured(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(expected, q + .02)
     assert np.all(result >= model.lower) and np.all(result <= model.upper)
     assert_pose(pose(model, result), expected)
 
@@ -71,100 +67,62 @@ def test_prismatic_joint_uses_metres(tmp_path):
     model = load_chain(path, ['slide'], 'base', 'tool')
     assert model.units == ('m',)
     target = pin.SE3(np.eye(3), np.array([.12, .1, 0]))
-    goal = PoseIK(model, IKSettings(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(target, [0.])
+    goal = PoseIK(model, IKSettings.configured(max_iterations=250, position_tolerance=1e-9, orientation_tolerance=1e-9)).solve(target, [0.])
     assert goal == pytest.approx([.12])
 
 
-@pytest.mark.parametrize('name', ['so101', 'parol6'])
-@pytest.mark.parametrize('leader_q', [
-    [0.] * 6,
-    [.1, -.05, .1, .05, .02, 0.],
-    [.2, -.1, .2, .1, .05, 0.],
-])
-def test_follower_changes_by_configuration_only(name, leader_q):
-    mapper = mapping(name)
-    goal = mapper.solve(leader_q, mapper.reference)
-    mapper.spec.validate(goal)
-    assert_pose(pose(mapper.follower, goal), mapper.target_pose(leader_q))
+@pytest.mark.parametrize('name', ['so101', 'parol6', 'parol6_msg_ai_100'])
+def test_engagement_anchors_at_measured_tcp(name):
+    mapping = LeaderPose(tracking_profile(name))
+    raw = dict.fromkeys(mapping.chain.joints, 2000)
+    calibration = dict.fromkeys(raw, dict(range_min=100, range_max=3900))
+    leader, grip = mapping.read(raw, calibration)
+    tcp = pin.SE3(pin.rpy.rpyToMatrix(.2, -.4, .6), np.array([.13, .02, .21]))
+    mapping.align(leader, tcp)
+    assert_pose(mapping.target(leader), tcp)
+    raw['shoulder_pan'] += 100
+    moved, _ = mapping.read(raw, calibration)
+    assert np.linalg.norm(mapping.target(moved).translation - tcp.translation) > .001
     if name == 'so101':
-        so101().spec.require(mapper.spec)
-        assert mapper.follower.active.tolist() == list(range(5))
+        raw['gripper'] = 100
+        _, grip = mapping.read(raw, calibration)
+        assert grip == pytest.approx([so101().spec.lower[-1]])
     else:
-        assert mapper.spec.joints == ('L1', 'L2', 'L3', 'L4', 'L5', 'L6', 'gripper_slide')
-        assert mapper.follower.active.tolist() == list(range(6))
+        assert grip == []
 
 
-def test_encoder_angles_are_not_rescaled_to_follower_limits_and_gripper_is_separate():
-    mapper = mapping()
-    calibration = {name: dict(id=i+1, drive_mode=0, homing_offset=0, range_min=100, range_max=3900)
-                   for i, name in enumerate(mapper.leader.joints)}
-    raw = dict(zip(mapper.leader.joints, [2030, 1980, 2040, 2020, 2050, 100]))
-    physical_angles = [(raw[name] - 2000) * 2 * np.pi / 4096 for name in mapper.leader.joints]
-    expected = mapper.target_pose(physical_angles)
-    for grip, expected_grip in ((100, mapper.spec.lower[-1]), (2000, (mapper.spec.lower[-1] + mapper.spec.upper[-1])/2),
-                                (3900, mapper.spec.upper[-1])):
-        raw['gripper'] = grip
-        goal = mapper.map(raw, calibration, mapper.reference)
-        assert goal[-1] == pytest.approx(expected_grip)
-        assert_pose(pose(mapper.follower, goal), expected)
+def test_servo_at_wrist_singularity_and_travel_stop_recovers():
+    profile = parol6(scene='robot_only')
+    chain = load_chain(profile.description, profile.spec.joints, 'base_link', 'tool_tcp')
+    servo = CartesianServo(chain, robot_settings()['cartesian']['pneumatic'])
+    q = np.r_[np.deg2rad(robot_settings()['motion']['pose_degrees']), profile.initial[-1]]
+    start = servo.pose(q)
+    dt = robot_settings()['motion']['status_period']
+    outside = pin.SE3(start.rotation, start.translation + [2., 0., 0.])
+    for target, count in [(outside, 150), (start, 1200)]:
+        for _ in range(count):
+            goal = servo.step(target, q, dt)
+            assert np.all(np.abs(goal[:6] - q[:6]) <= servo.velocity_limits * dt + 1e-12)
+            assert np.all(goal >= chain.lower) and np.all(goal <= chain.upper)
+            assert goal[-1] == profile.initial[-1]
+            q = goal
+        if target is outside:
+            assert np.linalg.norm(servo.pose(q).translation - start.translation) > .02
+    assert_pose(servo.pose(q), start)
 
 
-def test_ik_encoder_conversion_preserves_angles_past_calibration_extrema():
-    mapper = mapping()
-    calibration = {name: dict(id=i+1, drive_mode=0, homing_offset=0, range_min=100, range_max=3900)
-                   for i, name in enumerate(mapper.leader.joints)}
-    calibration['elbow_flex'].update(range_min=857, range_max=3063)
-    raw = dict.fromkeys(mapper.leader.joints, 2000)
-    previous_angle = None
-    for value in (3062, 3063, 3064, 3065):
-        raw['elbow_flex'] = value
-        angles = [(raw[name] - (c['range_min'] + c['range_max'])/2) * 2*np.pi/4096
-                  for name in mapper.leader.joints for c in [calibration[name]]]
-        goal = mapper.map(raw, calibration, mapper.reference)
-        mapper.spec.validate(goal)
-        assert_pose(pose(mapper.follower, goal), mapper.target_pose(angles), .001, .01)
-        if previous_angle is not None:
-            assert angles[2] - previous_angle == pytest.approx(2*np.pi/4096)
-        previous_angle = angles[2]
-    raw['gripper'] = 3901
-    with pytest.raises(ValueError, match='outside the declared position bounds'):
-        mapper.map(raw, calibration, mapper.reference)
-
-
-@pytest.mark.parametrize('index,side', [(0, -1), (2, 1)])
-def test_measured_arm_state_outside_bounds_is_an_ik_seed_not_a_command(index, side):
-    mapper = mapping()
-    seed = mapper.reference.copy()
-    boundary = mapper.spec.lower[index] if side < 0 else mapper.spec.upper[index]
-    seed[index] = boundary + side * .01
-    seed[-1] = mapper.spec.lower[-1] - .001
-    original = seed.copy()
-    leader_q = [0.] * 6
-    leader_q[index] = boundary - side * .1
-    command_seed = seed.copy()
-    command_seed[-1] = mapper.spec.lower[-1]
-    goal = mapper.solve(leader_q, command_seed)
-    np.testing.assert_array_equal(seed, original)
-    mapper.spec.validate(goal)
-    assert abs(goal[index] - boundary) > .05
-    assert_pose(pose(mapper.follower, goal), mapper.target_pose(leader_q))
-
-
-def test_frame_alignment_and_scale(tmp_path):
-    text = (CONFIG / 'parol6_ik.toml').read_text().replace('translation_scale = 1.0', 'translation_scale = 2.0')
-    text = text.replace('rotation_rpy = [0.0, 0.0, 0.0]', 'rotation_rpy = [0.0, 0.0, 1.5707963267948966]')
-    config = tmp_path / 'aligned.toml'
-    config.write_text(text)
-    mapper = FKIKMapping(config)
-    q = [.1, -.05, .1, .05, .02, 0.]
-    leader = pose(mapper.leader, q)
-    target = mapper.target_pose(q)
-    rotation = (pin.rpy.rpyToMatrix(0., 0., np.pi / 2)
-                @ mapper.follower_pose.rotation @ mapper.leader_pose.rotation.T)
-    expected_translation = mapper.follower_pose.translation + 2 * rotation @ (leader.translation - mapper.leader_pose.translation)
-    expected_rotation = rotation @ leader.rotation @ mapper.leader_pose.rotation.T @ rotation.T @ mapper.follower_pose.rotation
-    assert_pose(target, pin.SE3(expected_rotation, expected_translation))
-    assert_pose(mapper.target_pose(mapper.leader_reference), mapper.follower_pose)
+def test_relative_mapping_uses_rotated_axes_and_translation_scale():
+    config = deepcopy(tracking_profile('parol6'))
+    config['mapping'].update(translation_scale=2., rotation_rpy=[0., 0., np.pi / 2])
+    mapper = LeaderPose(config)
+    leader0 = pin.SE3.Identity()
+    tcp = pin.SE3(pin.rpy.rpyToMatrix(.2, 0., 0.), np.array([.1, .2, .3]))
+    mapper.align(leader0, tcp)
+    leader = pin.SE3(pin.rpy.rpyToMatrix(0., .1, 0.), np.array([.01, 0., 0.]))
+    axes = pin.rpy.rpyToMatrix(0., 0., np.pi / 2) @ tcp.rotation
+    expected = pin.SE3(axes @ leader.rotation @ axes.T @ tcp.rotation,
+                       tcp.translation + 2 * axes @ leader.translation)
+    assert_pose(mapper.target(leader), expected)
 
 
 def test_position_only_is_explicit(tmp_path):

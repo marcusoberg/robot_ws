@@ -1,20 +1,13 @@
 # SO101 leader teleoperation
 
-`pixi run teleop` starts the configured SO101-to-PAROL6 source. In another terminal, use `pixi run engage` to activate it and `pixi run disengage` to pause. These publish a Bool on `/teleop/engage`. Recording is deferred on the Python API branch. There is no terminal keyboard handler or direct-joint teleop mode.
+Run `pixi run teleop` with a Ready PAROL6 server. From another terminal, `pixi run engage` starts motion and `pixi run disengage` requests a hold. Run one producer at a time.
 
-The PAROL6 configuration preserves the four-second startup move to `(90, -144.683, 108.171, 5, 0, 90)` degrees. Once feedback confirms the endpoint, the current leader TCP becomes the reference frame. Later engagements in the same episode keep that alignment. The SO101 follower configuration starts tracking directly, without a startup move.
+Teleop launches the selected follower's visual model and TF. If `pixi run viz` is already running for that follower, use `pixi run teleop visualize:=false` to reuse it. Start the Foxglove bridge once with `pixi run foxglove`. Connect to `ws://127.0.0.1:8766` and open the [PAROL6 3D layout](../robot_server/foxglove/parol6_path.json). In a custom layout, select `base_link` as the display frame and enable `/robot/model` and `/teleop/target`.
 
-## Code map
+The model follows the server's measured `/joint_states`. After startup alignment, teleop publishes the exact commanded end-effector pose on `/teleop/target` as a `geometry_msgs/msg/PoseStamped`, with the same frame and sample timestamp as the control message. Disengaging stops goal updates.
 
-- `scripts/so101.py`: the complete ROS node and executable. It owns status/session callbacks, startup coordination, the IK worker, target publication, and shutdown.
-- `robot_teleop/leader.py`: calibrated serial acquisition from the SO101 leader.
-- `robot_teleop/fk_ik_map.py`: `FKIKMapping`, encoder conversion and application-specific leader/follower frame and gripper mapping.
-- `../../external/robot_kinematics`: reusable ROS-free Pinocchio FK/IK and joint smoothing. Both teleop and `robot_path` import this library directly.
-- `config/*_ik.toml`: robot frames, joint ordering, startup pose, observation contract, mapping and numerical IK parameters.
-- `launch/so101_so101.launch.py`: starts `so101.py` directly. `ik_config` defaults to the SO101 config; the PAROL6 Pixi tasks supply their own config.
+On first engagement in a server episode, teleop requests `activate_teleop`. The server executes the configured four-second joint move via the PAROL6 API. Once the API confirms completion, teleop aligns the current SO101 end-effector to the measured follower TCP in server status. Engaging again anchors at the current poses, so moving the leader while paused introduces no target jump.
 
-The leader is sampled at 20 Hz. Completed IK targets are delivered asynchronously; a 100 Hz ROS timer collects results and updates motion. The API receives live IK targets through `servo_j` and owns its smoothing/dispatch clock. Timed startup uses `move_j`. The simulation node is currently an inactive placeholder and publishes no status.
+At each fresh leader sample (nominally 20 Hz), `robot_teleop/leader_pose.py` decodes the calibrated encoders and applies leader FK and the relative frame mapping. The node publishes the resulting Cartesian pose on `/robot/pose_goal`. A stale leader or missing server status requests a pause. The serial server owns follower IK and streams joint references through the API.
 
-Missing/stale feedback pauses the source. Configuration and dependency failures propagate directly. There are no import fallbacks, automatic solver selection or alternate joint mappings. The API owns controller limits and E-stop handling; the ROS server retains session/deadline checks.
-
-The PAROL6 configs explicitly use `observation.cameras = []` for the robot-only server. SO101 uses the three-camera observation contract. Set this contract to match the server; the source does not guess a replacement contract from a mismatch.
+Leader port, calibration, frame mapping and startup selection are in `robot_teleop/teleop.toml`. Robot TCP frames, per-gripper tracking weights and the start pose are in `external/robot_core/robot.toml`.

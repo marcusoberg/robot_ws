@@ -12,7 +12,7 @@ from rclpy.executors import SingleThreadedExecutor
 from rclpy.node import Node
 from robot_server.msg import Control, JointGoal, Status
 from robot_description.spec import parol6
-from robot_path.move_joint import MoveJoint, parse_arguments
+from robot_server_client.move_joint import MoveJointClient, parse_arguments
 
 
 POSE = np.deg2rad([90., -144.683, 108.171, 5., 0., 90.])
@@ -90,7 +90,7 @@ def server(monkeypatch, tmp_path):
 
 def test_pose_then_standby_release_ownership_and_hold(server):
     for target in (POSE, STANDBY):
-        node = MoveJoint(target, duration=.15)
+        node = MoveJointClient(target, duration=.15)
         try:
             node.run()
             assert node.completed
@@ -113,7 +113,7 @@ def test_move_does_not_activate_an_unready_or_owned_robot(server, mode):
     if mode == 'Running':
         server.state.source = 'existing_path'
         server.state.session = 456
-    node = MoveJoint(POSE)
+    node = MoveJointClient(POSE)
     try:
         with pytest.raises(RuntimeError, match='Ready and unowned'):
             node.run()
@@ -126,7 +126,7 @@ def test_move_does_not_activate_an_unready_or_owned_robot(server, mode):
 @pytest.mark.parametrize('mode', ['Ready', 'Fault'])
 def test_interrupted_move_exits_without_reactivation(server, mode):
     server.interrupt_mode = mode
-    node = MoveJoint(POSE, duration=.2)
+    node = MoveJointClient(POSE, duration=.2)
     try:
         with pytest.raises(RuntimeError, match='Move interrupted'):
             node.run()

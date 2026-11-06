@@ -6,8 +6,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-PACKAGES = ['external/robot_kinematics', 'src/robot_description', 'src/robot_data',
-            'src/robot_server', 'src/robot_teleop', 'src/robot_path', 'src/model_client']
+ROS_PACKAGES = ['src/robot_description', 'src/robot_data', 'src/robot_server',
+                'src/robot_teleop', 'src/robot_path', 'src/model_client']
 
 
 def main():
@@ -17,12 +17,12 @@ def main():
     args = parser.parse_args()
     if not args.build_only:
         command = [sys.executable, '-m', 'pip', 'install', '--no-build-isolation']
-        for package in PACKAGES:
+        for package in ['external', *ROS_PACKAGES]:
             command.extend(['-e', package])
         subprocess.run(command, cwd=ROOT, check=True)
     if args.ros:
         subprocess.run([
-            'colcon', 'build', '--base-paths', 'src', '--build-base', 'build/ros-v2',
+            'colcon', 'build', '--base-paths', *ROS_PACKAGES, '--build-base', 'build/ros-v2',
             '--install-base', 'install/ros-v2', '--merge-install', '--symlink-install',
             '--executor', 'sequential', '--cmake-args', f'-DPython3_EXECUTABLE={sys.executable}',
         ], cwd=ROOT, check=True)

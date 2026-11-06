@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.12.*"
 resolution-markers = [
     "platform_machine == 'arm64' and sys_platform == 'darwin'",
@@ -523,6 +523,7 @@ source = { editable = "../../src/model_client" }
 dependencies = [
     { name = "numpy" },
     { name = "protobuf" },
+    { name = "robot-core" },
     { name = "robot-description" },
     { name = "websockets" },
 ]
@@ -531,6 +532,7 @@ dependencies = [
 requires-dist = [
     { name = "numpy", specifier = ">=2,<3" },
     { name = "protobuf", specifier = "==7.36.2" },
+    { name = "robot-core", specifier = ">=0.1,<0.2" },
     { name = "robot-description", specifier = ">=2,<3" },
     { name = "websockets", specifier = ">=14,<17" },
 ]
@@ -950,20 +952,37 @@ wheels = [
 ]
 
 [[package]]
+name = "robot-core"
+version = "0.1.0"
+source = { editable = "../../external" }
+dependencies = [
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "mujoco", marker = "extra == 'mujoco'", specifier = "==3.10.0" },
+    { name = "numpy", specifier = ">=2,<3" },
+    { name = "parol6", marker = "extra == 'python-api'", git = "https://github.com/PCrnjak/PAROL6-python-API.git?rev=6f17f41a6e8c0c828befb7830259a53b578e2b48" },
+    { name = "pin", marker = "extra == 'kinematics'", specifier = ">=4,<5" },
+]
+provides-extras = ["kinematics", "mujoco", "python-api"]
+
+[[package]]
 name = "robot-data"
 version = "2.0.0"
 source = { editable = "../../src/robot_data" }
 dependencies = [
     { name = "numpy" },
     { name = "pillow" },
-    { name = "robot-description" },
+    { name = "robot-core" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=2,<3" },
     { name = "pillow", specifier = ">=11,<13" },
-    { name = "robot-description", specifier = ">=2,<3" },
+    { name = "robot-core", specifier = ">=0.1,<0.2" },
 ]
 
 [[package]]
@@ -972,10 +991,14 @@ version = "2.0.0"
 source = { editable = "../../src/robot_description" }
 dependencies = [
     { name = "numpy" },
+    { name = "robot-core" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "numpy", specifier = ">=2,<3" }]
+requires-dist = [
+    { name = "numpy", specifier = ">=2,<3" },
+    { name = "robot-core", specifier = ">=0.1,<0.2" },
+]
 
 [[package]]
 name = "robot-model-environment"
@@ -984,6 +1007,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "lerobot", extra = ["feetech", "training"] },
     { name = "model-client" },
+    { name = "robot-core" },
     { name = "robot-data" },
     { name = "robot-description" },
     { name = "torch" },
@@ -995,6 +1019,7 @@ dependencies = [
 requires-dist = [
     { name = "lerobot", extras = ["training", "feetech"], specifier = "==0.6.0" },
     { name = "model-client", editable = "../../src/model_client" },
+    { name = "robot-core", editable = "../../external" },
     { name = "robot-data", editable = "../../src/robot_data" },
     { name = "robot-description", editable = "../../src/robot_description" },
     { name = "torch", specifier = "==2.10.0" },

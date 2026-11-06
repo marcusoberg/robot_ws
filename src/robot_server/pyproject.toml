@@ -2,16 +2,12 @@
 requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 [project]
-name = "robot-server-core"
+name = "robot-server-node"
 version = "2.0.0"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "robot-description>=2,<3",
-    "robot-data>=2,<3",
-    "parol6 @ git+https://github.com/PCrnjak/PAROL6-python-API.git@6f17f41a6e8c0c828befb7830259a53b578e2b48",
+    "robot-core[kinematics,python-api]>=0.1,<0.2",
 ]
 [tool.hatch.build.targets.wheel]
-packages = ["robot_server_core", "robot_server_node"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+packages = ["robot_server_client", "robot_server_node"]

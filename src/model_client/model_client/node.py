@@ -8,11 +8,12 @@ import numpy as np
 import rclpy
 from robot_description.spec import so101
 from robot_server.msg import Observation as ObservationMessage
-from robot_server_core.observation import Observation, immutable
-from robot_server_node.client import Source
-from robot_inference.bundle import verify, load_local
+from robot_core.data.observation import Observation, immutable
+from robot_server_client.source import Source
+from robot_core.data.bundle import verify
+from robot_inference.bundle import load_local
 from robot_inference.client import RemoteModel
-from robot_inference.contracts import Features
+from robot_core.data.inference import Features
 from .policy import PolicyRunner
 
 

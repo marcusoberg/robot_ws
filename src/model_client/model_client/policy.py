@@ -1,16 +1,8 @@
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 import time
 import uuid
 import numpy as np
-from robot_inference.contracts import Features, Identity, PolicyInput, validate_input, validate_prediction
-
-@dataclass(frozen=True)
-class ActionSample:
-    goal: tuple[float, ...]
-    observation: Identity
-    action_index: int
-    time_ns: int
+from robot_core.data.inference import ActionSample, Features, Identity, PolicyInput, validate_input, validate_prediction
 
 class PolicyRunner:
     def __init__(self, spec, client):

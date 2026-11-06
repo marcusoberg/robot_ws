@@ -4,7 +4,7 @@ import uuid
 from websockets.sync.client import connect
 from . import protocol_pb2 as pb
 from .codec import *
-from .contracts import validate_input, validate_prediction
+from robot_core.data.inference import validate_input, validate_prediction
 
 class RemoteModel:
     def __init__(self, url, features, *, expected_revision=None, timeout=120):

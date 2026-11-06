@@ -9,16 +9,18 @@ import uuid
 import rclpy
 from rclpy.node import Node
 from rclpy.signals import SignalHandlerOptions
+from robot_core.config import robot_settings
 from robot_server.msg import Control, Status
 
 
 class ControlClient(Node):
     def __init__(self):
         super().__init__("robot_control", start_parameter_services=False)
+        self.ros = robot_settings()["ros"]
         self.status = None
         self.instance = None
-        self.publisher = self.create_publisher(Control, "/robot/control", 10)
-        self.create_subscription(Status, "/robot/status", self.receive_status, 1)
+        self.publisher = self.create_publisher(Control, "/robot/control", robot_settings()["ros"]["command_depth"])
+        self.create_subscription(Status, "/robot/status", self.receive_status, robot_settings()["ros"]["latest_depth"])
 
     def receive_status(self, status):
         if self.instance is None or status.instance == self.instance:
@@ -34,16 +36,16 @@ class ControlClient(Node):
         return command_id
 
     def execute(self, operation):
-        deadline = time.monotonic() + 10
+        deadline = time.monotonic() + robot_settings()["motion"]["discovery_timeout"]
         while self.status is None or not self.publisher.get_subscription_count():
             if time.monotonic() >= deadline:
                 raise RuntimeError("No robot server discovered")
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self, timeout_sec=self.ros["control_poll_period"])
         if operation == "home":
             self.instance = self.status.instance
         command_id = self.send(operation)
         while time.monotonic() < deadline:
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self, timeout_sec=self.ros["control_poll_period"])
             if self.status.command_id == command_id:
                 if not self.status.command_accepted:
                     raise RuntimeError(self.status.command_result)
@@ -54,9 +56,9 @@ class ControlClient(Node):
         raise RuntimeError("No acknowledgement from the robot server")
 
     def wait_for_home(self):
-        deadline = time.monotonic() + 100
+        deadline = time.monotonic() + robot_settings()["hardware"]["home_timeout"]
         while time.monotonic() < deadline:
-            rclpy.spin_once(self, timeout_sec=0.1)
+            rclpy.spin_once(self, timeout_sec=self.ros["control_poll_period"])
             if self.status.mode == "Ready":
                 print("Homing complete; motors remain enabled and holding", flush=True)
                 return
@@ -68,9 +70,9 @@ class ControlClient(Node):
         if self.status is None:
             return
         command_id = self.send("disable")
-        deadline = time.monotonic() + 2
+        deadline = time.monotonic() + self.ros["cancel_home_timeout"]
         while rclpy.ok() and time.monotonic() < deadline:
-            rclpy.spin_once(self, timeout_sec=0.05)
+            rclpy.spin_once(self, timeout_sec=self.ros["ownership_poll_period"])
             if self.status.command_id == command_id and self.status.command_accepted:
                 print("Server accepted disable request", file=sys.stderr)
                 return

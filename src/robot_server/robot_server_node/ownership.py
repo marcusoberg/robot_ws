@@ -8,6 +8,8 @@ from pathlib import Path
 import tempfile
 import time
 
+from robot_core.config import robot_settings
+
 
 def lock_path():
     domain = int(os.environ.get("ROS_DOMAIN_ID", "0"))
@@ -44,7 +46,7 @@ def describe_owner(lock, **configuration):
     lock.flush()
 
 
-def stop_existing_server(timeout=10.0):
+def stop_existing_server(timeout=None):
     """Interrupt this domain's owner and wait for backend cleanup to release its lock."""
     owner = existing_server()
     if owner is None:
@@ -58,7 +60,7 @@ def stop_existing_server(timeout=10.0):
         os.kill(pid, signal.SIGINT)
     except ProcessLookupError:
         pass
-    deadline = time.monotonic() + timeout
+    deadline = time.monotonic() + (robot_settings()["ros"]["shutdown_timeout"] if timeout is None else timeout)
     while True:
         current = existing_server()
         if current is None:
@@ -66,5 +68,5 @@ def stop_existing_server(timeout=10.0):
         if current != owner:
             raise RuntimeError("Another server acquired ownership during shutdown")
         if time.monotonic() >= deadline:
-            raise TimeoutError("Server did not finish shutting down within 10 seconds")
-        time.sleep(0.05)
+            raise TimeoutError("Server did not finish shutting down before the shutdown deadline")
+        time.sleep(robot_settings()["ros"]["ownership_poll_period"])

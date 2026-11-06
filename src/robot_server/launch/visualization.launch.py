@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+from robot_core.config import robot_settings
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler, OpaqueFunction
 from launch.conditions import IfCondition
@@ -40,7 +41,7 @@ def nodes(context):
                  parameters=[{'description_file': str(profile.description)}])
     bridge = Node(package='foxglove_bridge', executable='foxglove_bridge',
                   condition=IfCondition(LaunchConfiguration('foxglove')),
-                  parameters=[{'address': '127.0.0.1', 'port': ParameterValue(LaunchConfiguration('port'), value_type=int),
+                  parameters=[{'address': robot_settings()['visualization']['host'], 'port': ParameterValue(LaunchConfiguration('port'), value_type=int),
                                'asset_uri_allowlist': ['^' + re.escape(assets_uri) + r'.+\.(?:stl|STL)$']}])
     return [
         RegisterEventHandler(OnProcessExit(target_action=bridge,
@@ -50,14 +51,15 @@ def nodes(context):
 
 
 def generate_launch_description():
+    config = robot_settings()["visualization"]
     return LaunchDescription([
-        DeclareLaunchArgument('robot', default_value='parol6'),
-        DeclareLaunchArgument('gripper', default_value='pneumatic'),
-        DeclareLaunchArgument('scene', default_value='robot_only'),
-        DeclareLaunchArgument('backend', default_value='simulation'),
-        DeclareLaunchArgument('publish_tf', default_value='true'),
-        DeclareLaunchArgument('publish_model', default_value='true'),
-        DeclareLaunchArgument('foxglove', default_value='false'),
-        DeclareLaunchArgument('port', default_value='8766'),
+        DeclareLaunchArgument('robot', default_value=str(config['robot']).lower()),
+        DeclareLaunchArgument('gripper', default_value=robot_settings()['robots']['parol6']['gripper']),
+        DeclareLaunchArgument('scene', default_value=str(config['scene']).lower()),
+        DeclareLaunchArgument('backend', default_value=robot_settings()['ros']['default_backend']),
+        DeclareLaunchArgument('publish_tf', default_value=str(config['publish_tf']).lower()),
+        DeclareLaunchArgument('publish_model', default_value=str(config['publish_model']).lower()),
+        DeclareLaunchArgument('foxglove', default_value=str(config['foxglove']).lower()),
+        DeclareLaunchArgument('port', default_value=str(robot_settings()['visualization']['port'])),
         OpaqueFunction(function=nodes),
     ])

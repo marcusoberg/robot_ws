@@ -2,8 +2,9 @@
 name = "robot-model-environment"
 version = "2.0.0"
 requires-python = ">=3.12,<3.13"
-dependencies = ["robot-description", "robot-data", "model-client", "lerobot[training,feetech]==0.6.0", "torch==2.10.0", "torchvision==0.25.0", "torchcodec==0.9.1"]
+dependencies = ["robot-core", "robot-description", "robot-data", "model-client", "lerobot[training,feetech]==0.6.0", "torch==2.10.0", "torchvision==0.25.0", "torchcodec==0.9.1"]
 [tool.uv.sources]
+robot-core = { path = "../../external", editable = true }
 robot-description = { path = "../../src/robot_description", editable = true }
 robot-data = { path = "../../src/robot_data", editable = true }
 model-client = { path = "../../src/model_client", editable = true }

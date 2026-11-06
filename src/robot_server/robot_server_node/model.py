@@ -10,6 +10,7 @@ from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from visualization_msgs.msg import Marker, MarkerArray
+from robot_core.config import robot_settings
 import robot_description
 
 
@@ -29,8 +30,6 @@ def model_markers(description_file):
             marker.action = Marker.ADD
             marker.type = Marker.MESH_RESOURCE
             mesh = visual.find("geometry/mesh")
-            if mesh is None:
-                raise ValueError(f"Expected mesh geometry for {link.attrib['name']}")
             filename = mesh.attrib["filename"]
             marker.mesh_resource = filename if "://" in filename else (
                 f"package://robot_description/{directory}/{filename}"
@@ -53,7 +52,7 @@ def model_markers(description_file):
             marker.pose.orientation.z = cr * cp * sy - sr * sp * cy
             marker.pose.orientation.w = cr * cp * cy + sr * sp * sy
             color = visual.find("material/color")
-            rgba = color.get("rgba") if color is not None else "0.75 0.75 0.75 1"
+            rgba = color.get("rgba") if color is not None else " ".join(map(str, robot_settings()["visualization"]["default_rgba"]))
             marker.color.r, marker.color.g, marker.color.b, marker.color.a = (
                 float(value) for value in rgba.split()
             )
@@ -68,7 +67,7 @@ class RobotModel(Node):
         self.markers = model_markers(description)
         qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.publisher = self.create_publisher(MarkerArray, "/robot/model", qos)
-        self.create_timer(1.0, self.publish_model)
+        self.create_timer(robot_settings()["visualization"]["model_period"], self.publish_model)
         self.publish_model()
 
     def publish_model(self):

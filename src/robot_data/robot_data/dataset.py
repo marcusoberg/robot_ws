@@ -2,7 +2,7 @@ from pathlib import Path
 import json
 import random
 import numpy as np
-from robot_description.spec import ActionSpec
+from robot_core.data.spec import ActionSpec
 
 def convert(recordings, output, repo_id, *, smoke=False):
     from lerobot.datasets.lerobot_dataset import LeRobotDataset

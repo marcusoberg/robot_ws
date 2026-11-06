@@ -4,7 +4,8 @@ from pathlib import Path
 import time
 import hashlib
 import numpy as np
-from .contracts import Features, PolicyInput, Prediction
+from robot_core.data.normalization import normalization_report
+from robot_core.data.inference import Features, PolicyInput, Prediction
 
 
 class LeRobotModel:
@@ -54,7 +55,6 @@ class LeRobotModel:
         with (Path(checkpoint) / "model.safetensors").open("rb") as weights:
             self.revision = ("sha256:" + hashlib.file_digest(weights, "sha256").hexdigest())
         self.context = None
-        from .normalization import normalization_report
 
         self.normalization = normalization_report(checkpoint)
         missing = [name for name, item in self.normalization.items() if not item["statistics_bound"]]

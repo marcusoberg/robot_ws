@@ -1,8 +1,13 @@
+from contextlib import closing
+
 import numpy as np
 import pytest
 
+from robot_core.validation import joint_positions
 from robot_description.spec import parol6
-from robot_path.joint_move import JointMove
+from robot_core.control.mujoco import MujocoController
+from robot_core.control.joint_move import JointMoveProfile
+from robot_core.data.commands import MoveJoint
 
 
 POSE = np.deg2rad([90., -144.683, 108.171, 5., 0., 90.])
@@ -12,7 +17,7 @@ POSE = np.deg2rad([90., -144.683, 108.171, 5., 0., 90.])
 def test_timed_pose_reaches_exact_endpoint_and_preserves_gripper(gripper):
     profile = parol6(gripper, scene='robot_only')
     initial = np.r_[np.deg2rad([90., -90., 180., 0., 0., 180.]), profile.initial[-1]]
-    move = JointMove(profile.spec, initial, POSE, 4.)
+    move = JointMoveProfile(initial, MoveJoint(POSE, 4.))
     samples = np.array([move.at(t) for t in np.linspace(0, 4, 401)])
     np.testing.assert_array_equal(samples[0], initial)
     np.testing.assert_array_equal(samples[-1, :6], POSE)
@@ -24,7 +29,7 @@ def test_timed_pose_reaches_exact_endpoint_and_preserves_gripper(gripper):
     assert np.all(samples >= np.minimum(move.initial, move.target) - 1e-12)
     assert np.all(samples <= np.maximum(move.initial, move.target) + 1e-12)
     for sample in samples:
-        profile.spec.validate(sample)
+        joint_positions(profile.spec, sample)
     # Starts and ends at rest; the interval is not stretched to a speed preset.
     dt = .0001
     assert np.max(np.abs((move.at(dt) - move.initial) / dt)) < 1e-6
@@ -40,12 +45,12 @@ def test_timed_pose_reaches_exact_endpoint_and_preserves_gripper(gripper):
 @pytest.mark.parametrize('duration', [0., -1., float('nan'), float('inf')])
 def test_invalid_duration_is_rejected(duration):
     profile = parol6(scene='robot_only')
-    with pytest.raises(ValueError, match='duration'):
-        JointMove(profile.spec, profile.initial, POSE, duration)
+    with closing(MujocoController(profile)) as controller, pytest.raises((ValueError, OverflowError)):
+        controller.execute(MoveJoint(POSE, duration)).result()
 
 
 @pytest.mark.parametrize('target', [[0.] * 5, [float('nan')] * 6, [10.] * 6])
 def test_invalid_target_is_rejected(target):
     profile = parol6(scene='robot_only')
-    with pytest.raises(ValueError):
-        JointMove(profile.spec, profile.initial, target, 4.)
+    with closing(MujocoController(profile)) as controller, pytest.raises(ValueError):
+        controller.execute(MoveJoint(target, 4.)).result()

@@ -1,0 +1,39 @@
+[hardware]
+leader_port = "/dev/cu.usbmodem5B910299271"
+leader_id = "so101-leader"
+calibration_dir = "~/.cache/huggingface/lerobot/calibration/teleoperators/so_leader"
+leader_baud = 1000000
+
+[leader]
+urdf = "package://robot_description/so101_leader/so101_leader_new_calib.urdf"
+base = "base_link"
+joints = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"]
+ticks_per_revolution = 4096
+direction = [1, 1, 1, 1, 1, 1]
+zero_radians = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+[mapping]
+translation_scale = 1.2
+rotation_rpy = [0.0, 0.0, 0.0]
+
+[launch]
+default_profile = "so101"
+visualize = true
+
+[teleop.parol6]
+leader_tip = "gripper_link"
+follower = { robot = "parol6", gripper = "pneumatic", scene = "robot_only" }
+start_pose = true
+direct = []
+
+[teleop.parol6_msg_ai_100]
+leader_tip = "gripper_link"
+follower = { robot = "parol6", gripper = "msg_ai_100", scene = "robot_only" }
+start_pose = true
+direct = []
+
+[teleop.so101]
+leader_tip = "gripper_frame_link"
+follower = { robot = "so101" }
+start_pose = false
+direct = [{input = "gripper", joint = "gripper", closed = -0.174533, open = 1.74533}]

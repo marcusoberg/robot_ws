@@ -14,7 +14,7 @@ def main():
         return
     python=ROOT/'environments/models/.venv/bin/python'
     if not python.exists():parser.error('Run setup-models first')
-    env['PYTHONPATH']=os.pathsep.join(str(ROOT/p) for p in ('src/robot_description','src/robot_data','src/robot_server','src/model_client'))
+    env['PYTHONPATH']=os.pathsep.join(str(ROOT/p) for p in ('external','src/robot_description','src/robot_data','src/model_client'))
     for key in ('AMENT_PREFIX_PATH','COLCON_PREFIX_PATH','ROS_DISTRO','ROS_VERSION','ROS_PYTHON_VERSION','DYLD_LIBRARY_PATH'):
         env.pop(key,None)
     command=['-m','robot_inference.server'] if args.operation=='serve' else ['-m','robot_data.cli',args.operation]
